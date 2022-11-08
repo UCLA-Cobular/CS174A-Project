@@ -745,7 +745,56 @@ const Textured_Phong = defs.Textured_Phong =
         // **Textured_Phong** is a Phong Shader extended to addditionally decal a
         // texture image over the drawn shape, lined up according to the texture
         // coordinates that are stored at each shape vertex.
-        vertex_glsl_code() {
+      shared_glsl_code() {
+        return super.shared_glsl_code() + `
+                float random (vec2 st) {
+                    return fract(sin(dot(st.xy, vec2(12.9898,78.233))) * 43758.5453123);
+                }
+                
+                float noise (vec2 st) {
+                    vec2 i = floor(st);
+                    vec2 f = fract(st);
+                
+                    // Four corners in 2D of a tile
+                    float a = random(i);
+                    float b = random(i + vec2(1.0, 0.0));
+                    float c = random(i + vec2(0.0, 1.0));
+                    float d = random(i + vec2(1.0, 1.0));
+                
+                    // Smooth Interpolation
+                
+                    // Cubic Hermine Curve.  Same as SmoothStep()
+                    vec2 u = f*f*(3.0-2.0*f);
+                    // u = smoothstep(0.,1.,f);
+                
+                    // Mix 4 coorners percentages
+                    return mix(a, b, u.x) +
+                    (c - a)* u.y * (1.0 - u.x) +
+                    (d - b) * u.x * u.y;
+                }
+                
+                float multi_octave_noise(vec2 st, float amp_scale, float freq_scale) {
+                    float pt = 0.0;
+                    float amplitude = 0.5;
+                    float freq = 1.0;
+                    
+                    #define OCTAVES 8
+                    for (int i = 0; i < OCTAVES; i++) {
+                          pt += amplitude * noise(st * freq);
+                          amplitude *= amp_scale;
+                          freq *= freq_scale;
+                    }
+                    
+                    return pt;
+                }
+                
+                float multi_octave_noise_wrapped(vec2 ft) {
+                    return multi_octave_noise(ft * 2., 0.47, 2.5);
+                }
+                `;
+      }
+
+      vertex_glsl_code() {
             // ********* VERTEX SHADER *********
             return this.shared_glsl_code() + `
                 varying vec2 f_tex_coord;
@@ -756,14 +805,14 @@ const Textured_Phong = defs.Textured_Phong =
                 uniform mat4 model_transform;
                 uniform mat4 projection_camera_model_transform;
         
-                void main(){                                                                   
+                void main(){
                     // The vertex's final resting place (in NDCS):
-                    gl_Position = projection_camera_model_transform * vec4( position, 1.0 );
                     // The final normal vector in screen space.
                     N = normalize( mat3( model_transform ) * normal / squared_scale);
                     vertex_worldspace = ( model_transform * vec4( position, 1.0 ) ).xyz;
                     // Turn the per-vertex texture coordinate into an interpolated variable.
                     f_tex_coord = texture_coord;
+                    gl_Position = projection_camera_model_transform * vec4( position.xy, multi_octave_noise_wrapped(f_tex_coord)*80., 1.0 );
                   } `;
         }
 
@@ -775,13 +824,21 @@ const Textured_Phong = defs.Textured_Phong =
                 varying vec2 f_tex_coord;
                 uniform sampler2D texture;
                 uniform float animation_time;
-                
+
                 void main(){
                     // Sample the texture image in the correct place:
-                    vec4 tex_color = texture2D( texture, f_tex_coord );
-                    if( tex_color.w < .01 ) discard;
+                    // vec4 tex_color = texture2D( texture, f_tex_coord );
+                    // if( tex_color.w < .01 ) discard;
+                    
+                    float noise_val = multi_octave_noise_wrapped(f_tex_coord);
+                    
+                    vec3 color;
+                    
+                    if (noise_val > 0.6) color = vec3(1., 1., 1.);
+                    else if (noise_val > 0.4) color = vec3(0., 0.6015625, 0.09019607843);
+                    else color = vec3(0., 0., 1.);
                                                                              // Compute an initial (ambient) color:
-                    gl_FragColor = vec4( ( tex_color.xyz + shape_color.xyz ) * ambient, shape_color.w * tex_color.w ); 
+                    gl_FragColor = vec4( color * ((noise_val * 0.5) + 0.5) , 1 ); 
                                                                              // Compute the final color with contributions from lights:
                     gl_FragColor.xyz += phong_model_lights( normalize( N ), vertex_worldspace );
                   } `;
