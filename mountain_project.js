@@ -34,7 +34,7 @@ export class MountainProject extends Scene {
         //        texture coordinates as required for cube #2.  You can either do this by modifying the cube code or by modifying
         //        a cube instance's texture_coords after it is already created.
         this.shapes = {
-            box_1: new Terrain(3),
+            box_1: new Terrain(500, 1000),
             box_2: new Cube(),
             axis: new Axis_Arrows(),
             bird: new Bird(),
@@ -51,7 +51,7 @@ export class MountainProject extends Scene {
             }),
             texture: new Material(new Textured_Phong(), {
                 color: hex_color("#ffffff"),
-                ambient: 0.5, diffusivity: 0.1, specularity: 0.1,
+                ambient: 0.0, diffusivity: 1, specularity: 0.,
                 texture: new Texture("assets/stars.png")
             }),
         }
@@ -72,13 +72,13 @@ export class MountainProject extends Scene {
             this.children.push(context.scratchpad.controls = new defs.Movement_Controls());
             // Define the global camera and projection matrices, which are stored in program_state.
             program_state.set_camera(this.initial_camera_location);
+
+            program_state.projection_transform = Mat4.perspective(
+              Math.PI / 4, context.width / context.height, 1, 10000);
         }
 
-        program_state.projection_transform = Mat4.perspective(
-            Math.PI / 4, context.width / context.height, 1, 100);
-
-        const light_position = vec4(10, 10, 10, 1);
-        program_state.lights = [new Light(light_position, color(0.5, 1, 1, 1), 1000)];
+        const light_position = vec4(0, 0, 200, 1);
+        program_state.lights = [new Light(light_position, color(0.5, 1, 1, 1), 1000000000)];
 
         let t = program_state.animation_time / 1000, dt = program_state.animation_delta_time / 1000;
         let model_transform = Mat4.identity();
