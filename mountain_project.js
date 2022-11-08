@@ -46,12 +46,13 @@ export class MountainProject extends Scene {
         //        you get to requirements 6 and 7 you will need different ones.
         this.materials = {
             phong: new Material(new Phong_Shader(), {
-                color: hex_color("#ffffff"),                 ambient: 0.2, diffusivity: 0.5, specularity: 0.5,
+                color: hex_color("#ffff00"),
+                ambient: 0.2, diffusivity: 0.5, specularity: 0.5,
 
             }),
             texture: new Material(new Textured_Phong(), {
                 color: hex_color("#ffffff"),
-                ambient: 0.0, diffusivity: 1, specularity: 0.,
+                ambient: 0.0, diffusivity: 0.4, specularity: 0.1,
                 texture: new Texture("assets/stars.png")
             }),
         }
@@ -77,8 +78,8 @@ export class MountainProject extends Scene {
               Math.PI / 4, context.width / context.height, 1, 10000);
         }
 
-        const light_position = vec4(0, 0, 200, 1);
-        program_state.lights = [new Light(light_position, color(0.5, 1, 1, 1), 1000000000)];
+        const light_position = vec4(100, 200, 200, 0);
+        program_state.lights = [new Light(light_position, color(1, 1, 1, 1), 1000000)];
 
         let t = program_state.animation_time / 1000, dt = program_state.animation_delta_time / 1000;
         let model_transform = Mat4.identity();
