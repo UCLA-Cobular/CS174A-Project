@@ -8,6 +8,10 @@ const {
 
 Object.assign(tiny, widgets);
 
+/**
+ * @property
+ * @type {{}}
+ */
 const defs = {};
 
 export {tiny, defs};
@@ -69,22 +73,22 @@ const Tetrahedron = defs.Tetrahedron =
             if (!using_flat_shading) {
                 // Method 1:  A tetrahedron with shared vertices.  Compact, performs better,
                 // but can't produce flat shading or discontinuous seams in textures.
-                this.arrays.position = Vec.cast([0, 0, 0], [1, 0, 0], [0, 1, 0], [0, 0, 1]);
-                this.arrays.normal = Vec.cast([-a, -a, -a], [1, 0, 0], [0, 1, 0], [0, 0, 1]);
-                this.arrays.texture_coord = Vec.cast([0, 0], [1, 0], [0, 1,], [1, 1]);
+                this.arrays.position = Vector.cast([0, 0, 0], [1, 0, 0], [0, 1, 0], [0, 0, 1]);
+                this.arrays.normal = Vector.cast([-a, -a, -a], [1, 0, 0], [0, 1, 0], [0, 0, 1]);
+                this.arrays.texture_coord = Vector.cast([0, 0], [1, 0], [0, 1,], [1, 1]);
                 // Notice the repeats in the index list.  Vertices are shared
                 // and appear in multiple triangles with this method.
                 this.indices.push(0, 1, 2, 0, 1, 3, 0, 2, 3, 1, 2, 3);
             } else {
                 // Method 2:  A tetrahedron with four independent triangles.
-                this.arrays.position = Vec.cast([0, 0, 0], [1, 0, 0], [0, 1, 0],
+                this.arrays.position = Vector.cast([0, 0, 0], [1, 0, 0], [0, 1, 0],
                     [0, 0, 0], [1, 0, 0], [0, 0, 1],
                     [0, 0, 0], [0, 1, 0], [0, 0, 1],
                     [0, 0, 1], [1, 0, 0], [0, 1, 0]);
 
                 // The essence of flat shading:  This time, values of normal vectors can
                 // be constant per whole triangle.  Repeat them for all three vertices.
-                this.arrays.normal = Vec.cast([0, 0, -1], [0, 0, -1], [0, 0, -1],
+                this.arrays.normal = Vector.cast([0, 0, -1], [0, 0, -1], [0, 0, -1],
                     [0, -1, 0], [0, -1, 0], [0, -1, 0],
                     [-1, 0, 0], [-1, 0, 0], [-1, 0, 0],
                     [a, a, a], [a, a, a], [a, a, a]);
@@ -93,7 +97,7 @@ const Tetrahedron = defs.Tetrahedron =
                 // image is mapped onto each face).  We couldn't do this with shared
                 // vertices since this features abrupt transitions when approaching the
                 // same point from different directions.
-                this.arrays.texture_coord = Vec.cast([0, 0], [1, 0], [1, 1],
+                this.arrays.texture_coord = Vector.cast([0, 0], [1, 0], [1, 1],
                     [0, 0], [1, 0], [1, 1],
                     [0, 0], [1, 0], [1, 1],
                     [0, 0], [1, 0], [1, 1]);
@@ -127,7 +131,7 @@ const Windmill = defs.Windmill =
                 const newNormal = spin.times(vec4(0, 0, 1, 0)).to3();
                 // Propagate the same normal to all three vertices:
                 this.arrays.normal.push(newNormal, newNormal, newNormal);
-                this.arrays.texture_coord.push(...Vec.cast([0, 0], [0, 1], [1, 0]));
+                this.arrays.texture_coord.push(...Vector.cast([0, 0], [0, 1], [1, 0]));
                 // Procedurally connect the 3 new vertices into triangles:
                 this.indices.push(3 * i, 3 * i + 1, 3 * i + 2);
             }
@@ -238,9 +242,26 @@ const Subdivision_Sphere = defs.Subdivision_Sphere =
 
 const Grid_Patch = defs.Grid_Patch =
     class Grid_Patch extends Shape {
-        // A grid of rows and columns you can distort. A tesselation of triangles connects the
-        // points, generated with a certain predictable pattern of indices.  Two callbacks
-        // allow you to dynamically define how to reach the next row or column.
+      /**
+       * next_x_function: Take a progress ratio and a previous point value, returning a point value
+       *
+       * @callback next_x_function
+       * @param {number} progress_ratio
+       * @param {tiny.Vector3?} prev_pt
+       * @return tiny.Vector3
+       */
+
+      /**
+       * A grid of rows and columns you can distort. A tesselation of triangles connects the
+       * points, generated with a certain predictable pattern of indices.  Two callbacks
+       * allow you to dynamically define how to reach the next row or column.
+       *
+       * @param {number} rows
+       * @param {number} columns
+       * @param {next_x_function} next_row_function
+       * @param {next_x_function} next_column_function
+       * @param {number[][]} texture_coord_range
+       */
         constructor(rows, columns, next_row_function, next_column_function, texture_coord_range = [[0, rows], [0, columns]]) {
             super("position", "normal", "texture_coord");
             let points = [];
