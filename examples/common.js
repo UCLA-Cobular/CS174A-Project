@@ -777,6 +777,7 @@ const Textured_Phong = defs.Textured_Phong =
                     float pt = 0.0;
                     float amplitude = 0.5;
                     float freq = 1.0;
+                    st *= 8.;
                     
                     #define OCTAVES 8
                     for (int i = 0; i < OCTAVES; i++) {
@@ -788,8 +789,14 @@ const Textured_Phong = defs.Textured_Phong =
                     return pt;
                 }
                 
+                float circle_texture(vec2 ft) {
+                  vec2 radial_coord = (ft-0.5)*2.;
+                  float modified_len = pow(length(radial_coord), 2.2);
+                  return 1.-modified_len;
+                }
+                
                 float multi_octave_noise_wrapped(vec2 ft) {
-                    return multi_octave_noise(ft * 2., 0.47, 2.5);
+                    return multi_octave_noise(ft * 2., 0.47, 2.5) * circle_texture(ft);
                 }
                 `;
       }
@@ -812,7 +819,8 @@ const Textured_Phong = defs.Textured_Phong =
                     vertex_worldspace = ( model_transform * vec4( position, 1.0 ) ).xyz;
                     // Turn the per-vertex texture coordinate into an interpolated variable.
                     f_tex_coord = texture_coord;
-                    gl_Position = projection_camera_model_transform * vec4( position.xy, multi_octave_noise_wrapped(f_tex_coord)*80., 1.0 );
+                    gl_Position = projection_camera_model_transform * vec4( position.x, multi_octave_noise_wrapped(f_tex_coord)*80., position.z, 1.0 );
+                    // gl_Position = projection_camera_model_transform * vec4( position.x, position.y, position.z, 1.0 );
                   } `;
         }
 
@@ -837,10 +845,15 @@ const Textured_Phong = defs.Textured_Phong =
                     if (noise_val > 0.6) color = vec3(1., 1., 1.);
                     else if (noise_val > 0.4) color = vec3(0., 0.6015625, 0.09019607843);
                     else color = vec3(0., 0., 1.);
-                                                                             // Compute an initial (ambient) color:
-                    gl_FragColor = vec4( color * ((noise_val * 0.5) + 0.5) , 1 ); 
+                    
+                    gl_FragColor = vec4( color * ((noise_val * 0.8) + 0.2) , 1 ); 
                                                                              // Compute the final color with contributions from lights:
-                    gl_FragColor.xyz += phong_model_lights( normalize( N ), vertex_worldspace );
+                    gl_FragColor.xyz += phong_model_lights( normalize( N ), vertex_worldspace ) * 0.5;
+                    gl_FragColor.xyz *= (phong_model_lights( normalize( N ), vertex_worldspace ) * 0.2) + 0.8;
+                    
+                    // float circle = circle_texture(f_tex_coord);
+                    //
+                    // gl_FragColor.xyz = vec3(circle, circle, circle);
                   } `;
         }
 
