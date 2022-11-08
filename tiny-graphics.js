@@ -1344,6 +1344,37 @@ const Webgl_Manager = tiny.Webgl_Manager =
             this.prev_time = time;
 
             const gl = this.context;
+
+            // dark blue: color(0, 0, 0.545, 1)
+            // light blue
+          
+            let factor = 0.5 + 0.5*Math.sin(Math.PI*2*time/1000.0/20);
+            
+            let light_blue = hex_color("#ADD8E6");
+            let dark_blue = hex_color("#00008B");
+            let sunset = hex_color("#ee5d6c");
+
+            let bg_color = color(light_blue[0]*factor + dark_blue[0]*(1-factor), light_blue[1]*factor + dark_blue[1]*(1-factor), light_blue[2]*factor + dark_blue[2]*(1-factor), 1) 
+
+            //START OF SUNSET CODE
+            // let factor = (time/1000.0/10) % 3;
+            // if(factor >= 0 && factor < 1)
+            // {
+            //     bg_color = color(light_blue[0]*(1-factor) + sunset[0]*factor, light_blue[1]*(1-factor) + sunset[1]*factor, light_blue[2]*(1-factor) + sunset[2]*factor, 1)        
+            // }
+            // else if(factor < 2)
+            // {
+            //     factor = factor - 1;
+            //     bg_color = color(sunset[0]*(1-factor) + dark_blue[0]*factor, sunset[1]*(1-factor) + dark_blue[1]*factor, sunset[2]*(1-factor) + dark_blue[2]*factor, 1)        
+            // }
+            // else
+            // {
+            //   factor = factor - 2;
+            //   bg_color = color(dark_blue[0]*(1-factor) + light_blue[0]*factor, dark_blue[1]*(1-factor) + light_blue[1]*factor, dark_blue[2]*(1-factor) + light_blue[2]*factor, 1)        
+            // }
+                    
+            gl.clearColor.apply(gl, bg_color);  
+        
             gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
             // Clear the canvas's pixels and z-buffer.
 
