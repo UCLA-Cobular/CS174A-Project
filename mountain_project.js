@@ -5,7 +5,21 @@ const {
     Vector, Vector3, vec, vec3, vec4, color, hex_color, Shader, Matrix, Mat4, Light, Shape, Material, Scene, Texture,
 } = tiny;
 
-const {Cube, Axis_Arrows, Textured_Phong, Windmill, Phong_Shader} = defs
+const {Subdivision_Sphere, Cube, Axis_Arrows, Textured_Phong, Windmill, Phong_Shader} = defs
+
+class Bird extends Shape {
+    constructor() {
+        super("position", "normal");
+        // TODO (Requirement 6)
+        this.arrays.position = Vector3.cast(
+            [0, -1, -1], [0, -1, 1], [-1, 1, -1], [-1, 1, 1], [1, 1, -1], [1, 1, 1], [-2, 0, 0], [2, 0, 0]);
+
+        this.arrays.normal = Vector3.cast(
+            [0, -1, -1], [0, -1, 1], [-1, 1, -1], [-1, 1, 1], [1, 1, -1], [1, 1, 1], [-2, 0, 0], [2, 0, 0]);
+
+        this.indices.push(6, 3, 2, 0, 1, 2, 2, 3, 1, 0, 1, 4, 4, 5, 1 , 4, 5, 7 );
+    }
+}
 
 export class MountainProject extends Scene {
     /**
@@ -22,7 +36,9 @@ export class MountainProject extends Scene {
         this.shapes = {
             box_1: new Terrain(3),
             box_2: new Cube(),
-            axis: new Axis_Arrows()
+            axis: new Axis_Arrows(),
+            bird: new Bird(),
+            sun: new Subdivision_Sphere(4)
         }
 
         // TODO:  Create the materials required to texture both cubes with the correct images and settings.
@@ -40,11 +56,15 @@ export class MountainProject extends Scene {
             }),
         }
 
-        this.initial_camera_location = Mat4.look_at(vec3(0, 10, 20), vec3(0, 0, 0), vec3(0, 0, 1));
+        // this.initial_camera_location = Mat4.look_at(vec3(0, 10, 20), vec3(0, 0, 0), vec3(0, 0, 1));
+        this.initial_camera_location = Mat4.translation(0, -10, -30);
+
     }
 
     make_control_panel() {
         // TODO:  Implement requirement #5 using a key_triggered_button that responds to the 'c' key.
+        this.key_triggered_button("View whole scene", ["Control", "0"], () => this.attached = () => this.initial_camera_location);
+        this.key_triggered_button("View bird 1", ["Control", "1"], () => this.attached = () => this.bird_1);
     }
 
     display(context, program_state) {
@@ -65,8 +85,20 @@ export class MountainProject extends Scene {
 
         // TODO:  Draw the required boxes. Also update their stored matrices.
         // You can remove the folloeing line.
-        this.shapes.box_2.draw(context, program_state, model_transform, this.materials.phong)
-        this.shapes.box_1.draw(context, program_state, model_transform, this.materials.phong)
+
+        const blue = hex_color("#1a9ffa");
+        model_transform = model_transform.times(Mat4.rotation(t, 0, 1, 0)).times(Mat4.translation(10, 12, 0));
+        this.shapes.bird.draw(context, program_state, model_transform, this.materials.phong.override({color:blue}), "TRIANGLE_STRIP");
+        this.bird_1 = Mat4.inverse(model_transform.times(Mat4.rotation(-0.9, 1, 0, 0)).times(Mat4.translation(0, 0, 15)));
+
+        model_transform = Mat4.identity().times(Mat4.translation(0, 17.5, 0)).times(Mat4.scale(1.5, 1.5, 1.5))
+        this.shapes.sun.draw(context, program_state, model_transform, this.materials.phong);
+  
+        if (this.attached != undefined)
+        {
+            let desired = this.attached();
+            program_state.camera_inverse = desired.map((x,i) => Vector.from(program_state.camera_inverse[i]).mix(x, 0.1));    
+        } 
 
     }
 }
