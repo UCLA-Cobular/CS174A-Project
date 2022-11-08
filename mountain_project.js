@@ -46,7 +46,7 @@ export class MountainProject extends Scene {
         //        you get to requirements 6 and 7 you will need different ones.
         this.materials = {
             phong: new Material(new Phong_Shader(), {
-                color: hex_color("#ffffff"),                 ambient: 0.5, diffusivity: 0.5, specularity: 0.5,
+                color: hex_color("#ffffff"),                 ambient: 0.2, diffusivity: 0.5, specularity: 0.5,
 
             }),
             texture: new Material(new Textured_Phong(), {
@@ -83,8 +83,7 @@ export class MountainProject extends Scene {
         let t = program_state.animation_time / 1000, dt = program_state.animation_delta_time / 1000;
         let model_transform = Mat4.identity();
 
-        // TODO:  Draw the required boxes. Also update their stored matrices.
-        // You can remove the folloeing line.
+        this.shapes.box_1.draw(context, program_state, model_transform, this.materials.texture)
 
         const blue = hex_color("#1a9ffa");
         model_transform = model_transform.times(Mat4.rotation(t, 0, 1, 0)).times(Mat4.translation(10, 12, 0));
@@ -93,12 +92,12 @@ export class MountainProject extends Scene {
 
         model_transform = Mat4.identity().times(Mat4.translation(0, 17.5, 0)).times(Mat4.scale(1.5, 1.5, 1.5))
         this.shapes.sun.draw(context, program_state, model_transform, this.materials.phong);
-  
+
         if (this.attached != undefined)
         {
             let desired = this.attached();
-            program_state.camera_inverse = desired.map((x,i) => Vector.from(program_state.camera_inverse[i]).mix(x, 0.1));    
-        } 
+            program_state.camera_inverse = desired.map((x,i) => Vector.from(program_state.camera_inverse[i]).mix(x, 0.1));
+        }
 
     }
 }
