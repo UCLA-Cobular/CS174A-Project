@@ -58,7 +58,7 @@ export class MountainProject extends Scene {
         }
 
         // this.initial_camera_location = Mat4.look_at(vec3(0, 10, 20), vec3(0, 0, 0), vec3(0, 0, 1));
-        this.initial_camera_location = Mat4.translation(0, -10, -30);
+        this.initial_camera_location = Mat4.translation(0, -60, -50);
 
     }
 
@@ -73,14 +73,14 @@ export class MountainProject extends Scene {
         this.t = program_state.animation_time / 1000
         this.dt = program_state.animation_delta_time / 1000;
         const blue = hex_color("#1a9ffa");
-        model_transform = model_transform.times(Mat4.rotation(this.t, 0, 1, 0)).times(Mat4.translation(10, 12, 0));
+        model_transform = model_transform.times(Mat4.rotation(this.t, 0, 1, 0)).times(Mat4.translation(10, 72, 0));
         this.shapes.bird.draw(context, program_state, model_transform, this.materials.phong.override({color:blue}), "TRIANGLE_STRIP");
         this.bird_1 = Mat4.inverse(model_transform.times(Mat4.rotation(-0.9, 1, 0, 0)).times(Mat4.translation(0, 0, 15)));
     }
 
     draw_sun(context, program_state, model_transform)
     {
-        model_transform = Mat4.identity().times(Mat4.translation(0, 17.5, 0)).times(Mat4.scale(1.5, 1.5, 1.5))
+        model_transform = Mat4.identity().times(Mat4.translation(0, 77.5, 0)).times(Mat4.scale(1.5, 1.5, 1.5))
         this.shapes.sun.draw(context, program_state, model_transform, this.materials.phong);
     }
 
