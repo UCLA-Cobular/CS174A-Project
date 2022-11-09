@@ -120,9 +120,9 @@ export class MountainProject extends Scene {
 
         this.draw_sun(context, program_state, model_transform);
 
-        this.shapes.box_1.draw(context, program_state, model_transform, this.materials.texture)
-
         this.draw_bird(context, program_state, model_transform);
+
+        this.shapes.box_1.draw(context, program_state, model_transform, this.materials.texture)
 
         if (this.attached != undefined)
         {
