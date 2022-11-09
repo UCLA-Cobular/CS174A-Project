@@ -5,7 +5,7 @@ const {
     Vector, Vector3, vec, vec3, vec4, color, hex_color, Shader, Matrix, Mat4, Light, Shape, Material, Scene, Texture,
 } = tiny;
 
-const {Subdivision_Sphere, Cube, Axis_Arrows, Textured_Phong, Windmill, Phong_Shader} = defs
+const {Subdivision_Sphere, Cube, Axis_Arrows, Textured_Phong, Windmill, Phong_Shader, Square, Triangle} = defs
 
 class Bird extends Shape {
     constructor() {
@@ -20,6 +20,45 @@ class Bird extends Shape {
         this.indices.push(6, 3, 2, 0, 1, 2, 2, 3, 1, 0, 1, 4, 4, 5, 1 , 4, 5, 7 );
     }
 }
+
+class Bird2 extends Shape {
+    constructor() {
+        super("position", "normal", "texture_coord");
+        // Loop 3 times (for each axis), and inside loop twice (for opposing cube sides):
+        let square_transform = Mat4.rotation(Math.PI/4.0, 0, 0, 1).times(Mat4.rotation(Math.PI/2.0, 0, 1, 0)).times(Mat4.translation(-1, 0, 0))
+        square_transform = Mat4.identity().times(Mat4.rotation(Math.PI/4.0, 0, 0, 1)).times(Mat4.translation(-1, 0, 0)).times(Mat4.rotation(Math.PI/2.0, 0, 1, 0))
+        const scale_diag = Mat4.scale(1, Math.sqrt(2), 1)
+        const rot_90_y = Mat4.rotation(Math.PI/2.0, 0, 1, 0)
+        const rot_45_z = Mat4.rotation(Math.PI/4.0, 0, 0, 1)
+        const neg_x =  Mat4.translation(-1, 0, 0)
+        let left_wing= Mat4.identity().times(neg_x).times(rot_45_z).times(rot_90_y).times(scale_diag)
+
+        
+        Square.insert_transformed_copy_into(this, [], left_wing);
+
+        const rot_neg_90_y = Mat4.rotation(Math.PI/-2.0, 0, 1, 0)
+        const rot_neg_45_z = Mat4.rotation(Math.PI/-4.0, 0, 0, 1)
+        const pos_x =  Mat4.translation(1, 0, 0)
+        let right_wing= Mat4.identity().times(pos_x).times(rot_neg_45_z).times(rot_neg_90_y).times(scale_diag)
+        
+        
+        Square.insert_transformed_copy_into(this, [], right_wing);
+
+        const wing_scale = Mat4.scale(1/Math.sqrt(2), 1, 1)
+        let left_tip = Mat4.translation(-3, 0, 0).times(rot_neg_45_z).times(rot_neg_90_y).times(wing_scale).times(rot_45_z).times(Mat4.scale(2, 2, 1))
+        
+
+        Triangle.insert_transformed_copy_into(this, [], left_tip);
+
+        let right_tip = Mat4.translation(3, 0, 0).times(rot_45_z).times(rot_90_y).times(wing_scale).times(rot_45_z).times(Mat4.scale(2, 2, 1))
+
+        Triangle.insert_transformed_copy_into(this, [], right_tip);
+        console.log(Mat4.identity().times(rot_45_z).times(rot_90_y).times(wing_scale).times(rot_45_z).times(Mat4.scale(2, 2, 1)).times(vec4(0,0,1,1)))
+    }
+}
+
+
+
 
 export class MountainProject extends Scene {
     /**
@@ -37,7 +76,7 @@ export class MountainProject extends Scene {
             box_1: new Terrain(500, 500),
             box_2: new Cube(),
             axis: new Axis_Arrows(),
-            bird: new Bird(),
+            bird: new Bird2(),
             sun: new Subdivision_Sphere(4)
         }
 
@@ -77,7 +116,7 @@ export class MountainProject extends Scene {
     {
         const blue = hex_color("#1a9ffa");
         model_transform = model_transform.times(Mat4.rotation(this.t, 0, 1, 0)).times(Mat4.translation(10, 72, 0));
-        this.shapes.bird.draw(context, program_state, model_transform, this.materials.phong.override({color:blue}), "TRIANGLE_STRIP");
+        this.shapes.bird.draw(context, program_state, model_transform, this.materials.phong.override({color:blue}));
         this.bird_1 = Mat4.inverse(model_transform.times(Mat4.rotation(-0.9, 1, 0, 0)).times(Mat4.translation(0, 0, 15)));
     }
 
