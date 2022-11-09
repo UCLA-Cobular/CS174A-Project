@@ -34,7 +34,7 @@ export class MountainProject extends Scene {
         //        texture coordinates as required for cube #2.  You can either do this by modifying the cube code or by modifying
         //        a cube instance's texture_coords after it is already created.
         this.shapes = {
-            box_1: new Terrain(500, 1000),
+            box_1: new Terrain(500, 500),
             box_2: new Cube(),
             axis: new Axis_Arrows(),
             bird: new Bird(),
@@ -46,12 +46,13 @@ export class MountainProject extends Scene {
         //        you get to requirements 6 and 7 you will need different ones.
         this.materials = {
             phong: new Material(new Phong_Shader(), {
-                color: hex_color("#ffffff"),                 ambient: 0.2, diffusivity: 0.5, specularity: 0.5,
+                color: hex_color("#ffff00"),
+                ambient: 0.0, diffusivity: 0.4, specularity: 0.1,
 
             }),
             texture: new Material(new Textured_Phong(), {
                 color: hex_color("#ffffff"),
-                ambient: 0.0, diffusivity: 1, specularity: 0.,
+                ambient: 0.0, diffusivity: 0.4, specularity: 0.2,
                 texture: new Texture("assets/stars.png")
             }),
         }
@@ -95,8 +96,8 @@ export class MountainProject extends Scene {
               Math.PI / 4, context.width / context.height, 1, 10000);
         }
 
-        const light_position = vec4(0, 0, 200, 1);
-        program_state.lights = [new Light(light_position, color(0.5, 1, 1, 1), 1000000000)];
+        const light_position = vec4(100, 500, 200, 1);
+        program_state.lights = [new Light(light_position, color(1, 1, 1, 1), 100000000)];
 
         let t = program_state.animation_time / 1000, dt = program_state.animation_delta_time / 1000;
         let model_transform = Mat4.identity();

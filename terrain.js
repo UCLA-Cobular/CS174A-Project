@@ -17,12 +17,12 @@ function NextRowFunction(progress_ratio, prev_pt) {
 export class Terrain extends defs.Grid_Patch {
   constructor(subdivisions, leg_size) {
     const step = leg_size / subdivisions
-    const initial_corner_point = tiny.vec3(-leg_size/2, -leg_size/2, 0);
+    const initial_corner_point = tiny.vec3(-leg_size/2, 0, -leg_size/2);
 
     const column_operation = (t, p) => tiny.Mat4.translation(step, 0, 0).times(p.to4(1)).to3();
-    const row_operation = (s, p) => p ? tiny.Mat4.translation(0, step, 0).times(p.to4(1)).to3()
+    const row_operation = (s, p) => p ? tiny.Mat4.translation(0, 0, step).times(p.to4(1)).to3()
       : initial_corner_point;
 
-    super(subdivisions, subdivisions, row_operation, column_operation, [[0,8], [0,8]]);
+    super(subdivisions, subdivisions, row_operation, column_operation, [[0,1], [0,1]]);
   }
 }
