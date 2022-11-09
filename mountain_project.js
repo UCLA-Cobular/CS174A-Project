@@ -67,6 +67,24 @@ export class MountainProject extends Scene {
         this.key_triggered_button("View bird 1", ["Control", "1"], () => this.attached = () => this.bird_1);
     }
 
+    draw_bird(context, program_state, model_transform)
+    {
+        this.t = program_state.animation_time / 1000
+        this.dt = program_state.animation_delta_time / 1000;
+        const blue = hex_color("#1a9ffa");
+        model_transform = model_transform.times(Mat4.rotation(this.t, 0, 1, 0)).times(Mat4.translation(10, 12, 0));
+        this.shapes.bird.draw(context, program_state, model_transform, this.materials.phong.override({color:blue}), "TRIANGLE_STRIP");
+        this.bird_1 = Mat4.inverse(model_transform.times(Mat4.rotation(-0.9, 1, 0, 0)).times(Mat4.translation(0, 0, 15)));
+    }
+
+    draw_sun(context, program_state, model_transform)
+    {
+        model_transform = Mat4.identity().times(Mat4.translation(0, 17.5, 0)).times(Mat4.scale(1.5, 1.5, 1.5))
+        this.shapes.sun.draw(context, program_state, model_transform, this.materials.phong);
+    }
+
+    
+
     display(context, program_state) {
         if (!context.scratchpad.controls) {
             this.children.push(context.scratchpad.controls = new defs.Movement_Controls());
@@ -85,13 +103,9 @@ export class MountainProject extends Scene {
 
         this.shapes.box_1.draw(context, program_state, model_transform, this.materials.texture)
 
-        const blue = hex_color("#1a9ffa");
-        model_transform = model_transform.times(Mat4.rotation(t, 0, 1, 0)).times(Mat4.translation(10, 12, 0));
-        this.shapes.bird.draw(context, program_state, model_transform, this.materials.phong.override({color:blue}), "TRIANGLE_STRIP");
-        this.bird_1 = Mat4.inverse(model_transform.times(Mat4.rotation(-0.9, 1, 0, 0)).times(Mat4.translation(0, 0, 15)));
+        this.draw_bird(context, program_state, model_transform);
 
-        model_transform = Mat4.identity().times(Mat4.translation(0, 17.5, 0)).times(Mat4.scale(1.5, 1.5, 1.5))
-        this.shapes.sun.draw(context, program_state, model_transform, this.materials.phong);
+        this.draw_sun(context, program_state, model_transform);
 
         if (this.attached != undefined)
         {
