@@ -24,36 +24,27 @@ class Bird extends Shape {
 class Bird2 extends Shape {
     constructor() {
         super("position", "normal", "texture_coord");
-        // Loop 3 times (for each axis), and inside loop twice (for opposing cube sides):
-        let square_transform = Mat4.rotation(Math.PI/4.0, 0, 0, 1).times(Mat4.rotation(Math.PI/2.0, 0, 1, 0)).times(Mat4.translation(-1, 0, 0))
-        square_transform = Mat4.identity().times(Mat4.rotation(Math.PI/4.0, 0, 0, 1)).times(Mat4.translation(-1, 0, 0)).times(Mat4.rotation(Math.PI/2.0, 0, 1, 0))
         const scale_diag = Mat4.scale(1, Math.sqrt(2), 1)
         const rot_90_y = Mat4.rotation(Math.PI/2.0, 0, 1, 0)
         const rot_45_z = Mat4.rotation(Math.PI/4.0, 0, 0, 1)
-        const neg_x =  Mat4.translation(-1, 0, 0)
-        let left_wing= Mat4.identity().times(neg_x).times(rot_45_z).times(rot_90_y).times(scale_diag)
+        let left_wing= Mat4.translation(-1, 0, 0).times(rot_45_z).times(rot_90_y).times(scale_diag)
 
-        
         Square.insert_transformed_copy_into(this, [], left_wing);
 
         const rot_neg_90_y = Mat4.rotation(Math.PI/-2.0, 0, 1, 0)
         const rot_neg_45_z = Mat4.rotation(Math.PI/-4.0, 0, 0, 1)
-        const pos_x =  Mat4.translation(1, 0, 0)
-        let right_wing= Mat4.identity().times(pos_x).times(rot_neg_45_z).times(rot_neg_90_y).times(scale_diag)
-        
+        let right_wing= Mat4.translation(1, 0, 0).times(rot_neg_45_z).times(rot_neg_90_y).times(scale_diag)
         
         Square.insert_transformed_copy_into(this, [], right_wing);
 
         const wing_scale = Mat4.scale(1/Math.sqrt(2), 1, 1)
         let left_tip = Mat4.translation(-3, 0, 0).times(rot_neg_45_z).times(rot_neg_90_y).times(wing_scale).times(rot_45_z).times(Mat4.scale(2, 2, 1))
         
-
         Triangle.insert_transformed_copy_into(this, [], left_tip);
 
         let right_tip = Mat4.translation(3, 0, 0).times(rot_45_z).times(rot_90_y).times(wing_scale).times(rot_45_z).times(Mat4.scale(2, 2, 1))
 
         Triangle.insert_transformed_copy_into(this, [], right_tip);
-        console.log(Mat4.identity().times(rot_45_z).times(rot_90_y).times(wing_scale).times(rot_45_z).times(Mat4.scale(2, 2, 1)).times(vec4(0,0,1,1)))
     }
 }
 
@@ -102,7 +93,7 @@ export class MountainProject extends Scene {
         this.initial_camera_location = Mat4.translation(0, -60, -50);
 
         this.angle = 0;
-        this.prev_2 = vec3(10, 0, 0);
+        this.prev_2 = vec3(12, 0, 0);
 
     }
 
@@ -123,10 +114,8 @@ export class MountainProject extends Scene {
 
     draw_bird_2(context, program_state, model_transform)
     {
-        const blue = hex_color("#1a9ffa");
-        this.angle += this.dt;
-        // this.angle = Math.PI/2.0;
-        let scale = 10*2 / (3 - Math.cos(2*this.angle));
+        const green = hex_color("#ABDC69");
+        let scale = 12*2 / (3 - Math.cos(2*this.angle));
 
         let curr_x = scale*Math.cos(this.angle)
         let curr_z = scale*Math.sin(2.0*this.angle)
@@ -136,7 +125,7 @@ export class MountainProject extends Scene {
         model_transform = Mat4.identity().times(Mat4.translation(curr_x, 64, curr_z))
             .times(this.get_rot_matrix(curr_pos, this.prev_2))
         this.prev_2 = curr_pos
-        this.shapes.bird.draw(context, program_state, model_transform, this.materials.phong.override({color:blue}));
+        this.shapes.bird.draw(context, program_state, model_transform, this.materials.phong.override({color:green}));
         this.bird_2 = Mat4.inverse(model_transform.times(Mat4.rotation(-0.9, 1, 0, 0)).times(Mat4.translation(0, 0, 15)));
     }
 
@@ -183,6 +172,7 @@ export class MountainProject extends Scene {
 
         this.t = program_state.animation_time / 1000;
         this.dt = program_state.animation_delta_time / 1000;
+        this.angle += this.dt;
         let model_transform = Mat4.identity();
 
         this.draw_sun(context, program_state, model_transform);
