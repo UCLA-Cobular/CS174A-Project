@@ -57,9 +57,6 @@ class Bird2 extends Shape {
     }
 }
 
-
-
-
 export class MountainProject extends Scene {
     /**
      *  **Base_scene** is a Scene that can be added to any display canvas.
@@ -104,20 +101,51 @@ export class MountainProject extends Scene {
         // this.initial_camera_location = Mat4.look_at(vec3(0, 10, 20), vec3(0, 0, 0), vec3(0, 0, 1));
         this.initial_camera_location = Mat4.translation(0, -60, -50);
 
+        this.angle = 0;
+        this.prev_2 = vec3(10, 0, 0);
+
     }
 
     make_control_panel() {
         // TODO:  Implement requirement #5 using a key_triggered_button that responds to the 'c' key.
         this.key_triggered_button("View whole scene", ["Control", "0"], () => this.attached = () => this.initial_camera_location);
         this.key_triggered_button("View bird 1", ["Control", "1"], () => this.attached = () => this.bird_1);
+        this.key_triggered_button("View bird 2", ["Control", "2"], () => this.attached = () => this.bird_2);
     }
 
-    draw_bird(context, program_state, model_transform)
+    draw_bird_1(context, program_state, model_transform)
     {
         const blue = hex_color("#1a9ffa");
         model_transform = model_transform.times(Mat4.rotation(this.t, 0, 1, 0)).times(Mat4.translation(10, 72, 0));
         this.shapes.bird.draw(context, program_state, model_transform, this.materials.phong.override({color:blue}));
         this.bird_1 = Mat4.inverse(model_transform.times(Mat4.rotation(-0.9, 1, 0, 0)).times(Mat4.translation(0, 0, 15)));
+    }
+
+    draw_bird_2(context, program_state, model_transform)
+    {
+        const blue = hex_color("#1a9ffa");
+        this.angle += this.dt;
+        // this.angle = Math.PI/2.0;
+        let scale = 10*2 / (3 - Math.cos(2*this.angle));
+
+        let curr_x = scale*Math.cos(this.angle)
+        let curr_z = scale*Math.sin(2.0*this.angle)
+
+        let curr_pos = vec3(curr_x, 0, curr_z)
+  
+        model_transform = Mat4.identity().times(Mat4.translation(curr_x, 64, curr_z))
+            .times(this.get_rot_matrix(curr_pos, this.prev_2))
+        this.prev_2 = curr_pos
+        this.shapes.bird.draw(context, program_state, model_transform, this.materials.phong.override({color:blue}));
+        this.bird_2 = Mat4.inverse(model_transform.times(Mat4.rotation(-0.9, 1, 0, 0)).times(Mat4.translation(0, 0, 15)));
+    }
+
+    get_rot_matrix(curr, prev)
+    {
+        let rot_to = prev.minus(curr)
+        let axis = vec3(0, 0, 1).cross(rot_to.normalized())
+        let dot_prod = vec3(0, 0, 1).dot(rot_to.normalized())
+        return Mat4.rotation(Math.acos(dot_prod), axis[0], axis[1], axis[2])
     }
 
     draw_sun(context, program_state, model_transform)
@@ -159,7 +187,9 @@ export class MountainProject extends Scene {
 
         this.draw_sun(context, program_state, model_transform);
 
-        this.draw_bird(context, program_state, model_transform);
+        this.draw_bird_1(context, program_state, model_transform);
+
+        this.draw_bird_2(context, program_state, model_transform);
 
         this.shapes.box_1.draw(context, program_state, model_transform, this.materials.texture)
 
