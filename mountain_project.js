@@ -94,6 +94,7 @@ export class MountainProject extends Scene {
 
         this.angle = 0;
         this.prev_2 = vec3(12, 0, 0);
+        this.prev_3 = vec3(12, 0, 0);
 
     }
 
@@ -102,6 +103,7 @@ export class MountainProject extends Scene {
         this.key_triggered_button("View whole scene", ["Control", "0"], () => this.attached = () => this.initial_camera_location);
         this.key_triggered_button("View bird 1", ["Control", "1"], () => this.attached = () => this.bird_1);
         this.key_triggered_button("View bird 2", ["Control", "2"], () => this.attached = () => this.bird_2);
+        this.key_triggered_button("View bird 3", ["Control", "3"], () => this.attached = () => this.bird_3);
     }
 
     draw_bird_1(context, program_state, model_transform)
@@ -127,6 +129,23 @@ export class MountainProject extends Scene {
         this.prev_2 = curr_pos
         this.shapes.bird.draw(context, program_state, model_transform, this.materials.phong.override({color:green}));
         this.bird_2 = Mat4.inverse(model_transform.times(Mat4.rotation(Math.PI, 0, 1, 0)).times(Mat4.rotation(-0.9, 1, 0, 0)).times(Mat4.translation(0, 0, 15)));
+    }
+
+    draw_bird_3(context, program_state, model_transform)
+    {
+        const green = hex_color("#E38C29");
+        let scale = 12*2 / (3 - Math.cos(2*this.angle));
+
+        let curr_x = scale*Math.cos(this.angle)
+        let curr_y = scale*Math.sin(2.0*this.angle)
+
+        let curr_pos = vec3(curr_x, curr_y, 0)
+  
+        model_transform = Mat4.identity().times(Mat4.translation(curr_x, 60 + curr_y, -5))
+            .times(this.get_rot_matrix(curr_pos, this.prev_3))
+        this.prev_3 = curr_pos
+        this.shapes.bird.draw(context, program_state, model_transform, this.materials.phong.override({color:green}));
+        this.bird_3 = Mat4.inverse(model_transform.times(Mat4.rotation(Math.PI, 0, 1, 0)).times(Mat4.rotation(-0.9, 1, 0, 0)).times(Mat4.translation(0, 0, 15)));
     }
 
     get_rot_matrix(curr, prev)
@@ -180,6 +199,8 @@ export class MountainProject extends Scene {
         this.draw_bird_1(context, program_state, model_transform);
 
         this.draw_bird_2(context, program_state, model_transform);
+
+        this.draw_bird_3(context, program_state, model_transform);
 
         this.shapes.box_1.draw(context, program_state, model_transform, this.materials.texture)
 
