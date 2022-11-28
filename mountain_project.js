@@ -61,7 +61,7 @@ export class MountainProject extends Scene {
         //        texture coordinates as required for cube #2.  You can either do this by modifying the cube code or by modifying
         //        a cube instance's texture_coords after it is already created.
         this.shapes = {
-            box_1: new Terrain(500, 500),
+            box_1: new Terrain(800, 500),
             box_2: new Cube(),
             axis: new Axis_Arrows(),
             bird: new Bird2(),
@@ -84,7 +84,7 @@ export class MountainProject extends Scene {
             }),
             texture: new Material(new Textured_Phong(), {
                 color: hex_color("#ffffff"),
-                ambient: 0.0, diffusivity: 0.4, specularity: 0.2,
+                ambient: 0.0, diffusivity: 0.4, specularity: 0.0,
                 texture: new Texture("assets/stars.png")
             }),
         }
@@ -209,6 +209,8 @@ export class MountainProject extends Scene {
             let desired = this.attached();
             program_state.camera_inverse = desired.map((x,i) => Vector.from(program_state.camera_inverse[i]).mix(x, 0.1));
         }
+
+        // context.clearColor(Math.random(), 0, 0, 1);
 
     }
 }

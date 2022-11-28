@@ -747,54 +747,59 @@ const Textured_Phong = defs.Textured_Phong =
         // coordinates that are stored at each shape vertex.
       shared_glsl_code() {
         return super.shared_glsl_code() + `
-                float random (vec2 st) {
+                double det_random_2d(vec2 st) {
+                    // This gives us what's basically a determanistic 2d random number. To change the seed, mix up 
+                    // the constants.
                     return fract(sin(dot(st.xy, vec2(12.9898,78.233))) * 43758.5453123);
                 }
                 
-                float noise (vec2 st) {
-                    vec2 i = floor(st);
-                    vec2 f = fract(st);
+                float gen_noise(vec2 pt) {
+                    // We'll need these parts later!
+                    vec2 integer = floor(pt);
+                    vec2 fraction = fract(pt);
                 
-                    // Four corners in 2D of a tile
-                    float a = random(i);
-                    float b = random(i + vec2(1.0, 0.0));
-                    float c = random(i + vec2(0.0, 1.0));
-                    float d = random(i + vec2(1.0, 1.0));
+                    // We sample four corners for the math below
+                    float bl = det_random_2d(integer);
+                    float br = det_random_2d(integer + vec2(1.0, 0.0));
+                    float tl = det_random_2d(integer + vec2(0.0, 1.0));
+                    float tr = det_random_2d(integer + vec2(1.0, 1.0));
+                    
+                    // A basic smoothstep - basically we use \`3x^{2}-2x^{3}\` to get a smooth curve between 0 and 1
+                    vec2 smoothed = fraction * fraction * (3.0 - 2.0 * fraction);
                 
-                    // Smooth Interpolation
-                
-                    // Cubic Hermine Curve.  Same as SmoothStep()
-                    vec2 u = f*f*(3.0-2.0*f);
-                    // u = smoothstep(0.,1.,f);
-                
-                    // Mix 4 coorners percentages
-                    return mix(a, b, u.x) +
-                    (c - a)* u.y * (1.0 - u.x) +
-                    (d - b) * u.x * u.y;
+                    // Here, we basically mix the corners by the smoothed fractional values to get one float value 
+                    //  for this point.
+                    return mix(bl, br, smoothed.x) +
+                    (tl - bl)* smoothed.y * (1.0 - smoothed.x) +
+                    (tr - br) * smoothed.x * smoothed.y;
                 }
                 
-                float multi_octave_noise(vec2 st, float amp_scale, float freq_scale) {
-                    float pt = 0.0;
-                    float amplitude = 0.5;
-                    float freq = 1.0;
-                    st *= 8.;
+                // Layer multiple octaves of noise! In this case 8 ocataves
+                // Pretty simple, it just loops over the noise function, shrinking down each time
+                float multi_octave_noise(vec2 pt, float amp_scale, float freq_scale) {
+                    float accumulator = 0.0;
+                    float starting_amplitude = 0.5;
+                    float starting_freq = 1.0;
+                    pt *= 8.;
                     
                     #define OCTAVES 8
                     for (int i = 0; i < OCTAVES; i++) {
-                          pt += amplitude * noise(st * freq);
-                          amplitude *= amp_scale;
-                          freq *= freq_scale;
+                          accumulator += starting_amplitude * gen_noise(pt * starting_freq);
+                          starting_amplitude *= amp_scale;
+                          starting_freq *= freq_scale;
                     }
                     
-                    return pt;
+                    return accumulator;
                 }
                 
+                // A really simple circle texture. We'll use this to make a circle mask
                 float circle_texture(vec2 ft) {
                   vec2 radial_coord = (ft-0.5)*2.;
                   float modified_len = pow(length(radial_coord), 2.2);
                   return 1.-modified_len;
                 }
-                
+               
+                // Wrap the noise function with some default values for params plus the circle mask.
                 float multi_octave_noise_wrapped(vec2 ft) {
                     return multi_octave_noise(ft * 2., 0.47, 2.5) * circle_texture(ft);
                 }
@@ -819,8 +824,7 @@ const Textured_Phong = defs.Textured_Phong =
                     vertex_worldspace = ( model_transform * vec4( position, 1.0 ) ).xyz;
                     // Turn the per-vertex texture coordinate into an interpolated variable.
                     f_tex_coord = texture_coord;
-                    gl_Position = projection_camera_model_transform * vec4( position.x, multi_octave_noise_wrapped(f_tex_coord)*80., position.z, 1.0 );
-                    // gl_Position = projection_camera_model_transform * vec4( position.x, position.y, position.z, 1.0 );
+                    gl_Position = projection_camera_model_transform * vec4( position.x, position.y, position.z, 1.0 );
                   } `;
         }
 
