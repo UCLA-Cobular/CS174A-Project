@@ -1,7 +1,6 @@
 import {defs, tiny} from "./examples/common.js";
+const Phong_Shader = defs.Phong_Shader;
 
-
-let counter = 0
 
 /**
  * next_x_function: Take a progress ratio and a previous point value, returning a point value
@@ -114,18 +113,137 @@ export class Terrain extends defs.Grid_Patch {
     const step = leg_size / subdivisions
     const initial_corner_point = tiny.vec3(-leg_size/2, 0, -leg_size/2);
 
-    const x_translation = tiny.Mat4.translation(step, 0, 0);
-    const result = tiny.Vector4.create(0,0,0,0);
-
-    const column_operation = (c, p, r) => {
-      const res = x_translation.mat_times_vec_pre(p.to4(1), result);
-
-      res[1] = multi_octave_noise_wrapped(r, c) * 80;
-      return res.to3();
-    };
-    const row_operation = (r, p) => p ? tiny.Mat4.translation(0, 0, step).times(p.to4(1)).to3()
+    const column_operation = (t, p) => tiny.Mat4.translation(step, 0, 0).times(p.to4(1)).to3();
+    const row_operation = (s, p) => p ? tiny.Mat4.translation(0, 0, step).times(p.to4(1)).to3()
       : initial_corner_point;
 
     super(subdivisions, subdivisions, row_operation, column_operation, [[0,1], [0,1]]);
+  }
+}
+
+export class MountainShader extends Phong_Shader {
+  shared_glsl_code() {
+    return super.shared_glsl_code() + `
+                float det_random_2d(vec2 st) {
+                    // This gives us what's basically a determanistic 2d random number. To change the seed, mix up 
+                    // the constants.
+                    return fract(sin(dot(st.xy, vec2(12.9898,78.233))) * 43758.5453123);
+                }
+                
+                float gen_noise(vec2 pt) {
+                    // We'll need these parts later!
+                    vec2 integer = floor(pt);
+                    vec2 fraction = fract(pt);
+                
+                    // We sample four corners for the math below
+                    float bl = det_random_2d(integer);
+                    float br = det_random_2d(integer + vec2(1.0, 0.0));
+                    float tl = det_random_2d(integer + vec2(0.0, 1.0));
+                    float tr = det_random_2d(integer + vec2(1.0, 1.0));
+                    
+                    // A basic smoothstep - basically we use \`3x^{2}-2x^{3}\` to get a smooth curve between 0 and 1
+                    vec2 smoothed = fraction * fraction * (3.0 - 2.0 * fraction);
+                
+                    // Here, we basically mix the corners by the smoothed fractional values to get one float value 
+                    //  for this point.
+                    return mix(bl, br, smoothed.x) +
+                    (tl - bl)* smoothed.y * (1.0 - smoothed.x) +
+                    (tr - br) * smoothed.x * smoothed.y;
+                }
+                
+                // Layer multiple octaves of noise! In this case 8 ocataves
+                // Pretty simple, it just loops over the noise function, shrinking down each time
+                float multi_octave_noise(vec2 pt, float amp_scale, float freq_scale) {
+                    float accumulator = 0.0;
+                    float starting_amplitude = 0.5;
+                    float starting_freq = 1.0;
+                    pt *= 8.;
+                    
+                    #define OCTAVES 8
+                    for (int i = 0; i < OCTAVES; i++) {
+                          accumulator += starting_amplitude * gen_noise(pt * starting_freq);
+                          starting_amplitude *= amp_scale;
+                          starting_freq *= freq_scale;
+                    }
+                    
+                    return accumulator;
+                }
+                
+                // A really simple circle texture. We'll use this to make a circle mask
+                float circle_texture(vec2 ft) {
+                  vec2 radial_coord = (ft-0.5)*2.;
+                  float modified_len = pow(length(radial_coord), 2.2);
+                  return 1.-modified_len;
+                }
+               
+                // Wrap the noise function with some default values for params plus the circle mask.
+                float multi_octave_noise_wrapped(vec2 ft) {
+                    float circle = circle_texture(ft);
+                    float noise = multi_octave_noise(ft * 2., 0.47, 2.5) * circle;
+                    return circle > noise ? noise : circle;
+                }
+                `;
+  }
+
+  vertex_glsl_code() {
+    // ********* VERTEX SHADER *********
+    return this.shared_glsl_code() + `
+                varying vec2 f_tex_coord;
+                attribute vec3 position, normal;                            
+                // Position is expressed in object coordinates.
+                attribute vec2 texture_coord;
+                
+                uniform mat4 model_transform;
+                uniform mat4 projection_camera_model_transform;
+        
+                void main(){
+                    // The vertex's final resting place (in NDCS):
+                    // The final normal vector in screen space.
+                    N = normalize( mat3( model_transform ) * normal / squared_scale);
+                    vertex_worldspace = ( model_transform * vec4( position, 1.0 ) ).xyz;
+                    // Turn the per-vertex texture coordinate into an interpolated variable.
+                    f_tex_coord = texture_coord;
+                    gl_Position = projection_camera_model_transform * vec4( position.x, multi_octave_noise_wrapped(f_tex_coord)*80., position.z, 1.0 );
+                  } `;
+  }
+
+  fragment_glsl_code() {
+    // ********* FRAGMENT SHADER *********
+    // A fragment is a pixel that's overlapped by the current triangle.
+    // Fragments affect the final image or get discarded due to depth.
+    return this.shared_glsl_code() + `
+                varying vec2 f_tex_coord;
+                uniform sampler2D texture;
+                uniform float animation_time;
+
+                void main(){
+                    // Sample the texture image in the correct place:
+                    // vec4 tex_color = texture2D( texture, f_tex_coord );
+                    // if( tex_color.w < .01 ) discard;
+                    
+                    float noise_val = multi_octave_noise_wrapped(f_tex_coord);
+                    
+                    vec3 color;
+                    
+                    if (noise_val > 0.55) color = vec3(1., 1., 1.);
+                    else if (noise_val > 0.3) color = vec3(0., 0.6015625, 0.09019607843);
+                    else color = vec3(0., 0., 1.);
+                    
+                    // Fuzz the color a bit
+                    gl_FragColor = vec4( color * ((noise_val * 0.8) + 0.2) , 1 );
+                  } `;
+  }
+
+  update_GPU(context, gpu_addresses, gpu_state, model_transform, material) {
+    // update_GPU(): Add a little more to the base class's version of this method.
+    super.update_GPU(context, gpu_addresses, gpu_state, model_transform, material);
+    // Updated for assignment 4
+    context.uniform1f(gpu_addresses.animation_time, gpu_state.animation_time / 1000);
+    if (material.texture && material.texture.ready) {
+      // Select texture unit 0 for the fragment shader Sampler2D uniform called "texture":
+      context.uniform1i(gpu_addresses.texture, 0);
+      // For this draw, use the texture image from correct the GPU buffer:
+      material.texture.activate(context);
+    }
   }
 }

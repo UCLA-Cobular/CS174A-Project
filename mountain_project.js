@@ -1,5 +1,5 @@
 import {defs, tiny} from './examples/common.js';
-import {Terrain} from "./terrain.js";
+import {Terrain, MountainShader} from "./terrain.js";
 
 const {
     Vector, Vector3, vec, vec3, vec4, color, hex_color, Shader, Matrix, Mat4, Light, Shape, Material, Scene, Texture,
@@ -34,12 +34,12 @@ class Bird2 extends Shape {
         const rot_neg_90_y = Mat4.rotation(Math.PI/-2.0, 0, 1, 0)
         const rot_neg_45_z = Mat4.rotation(Math.PI/-4.0, 0, 0, 1)
         let right_wing= Mat4.translation(1, 0, 0).times(rot_neg_45_z).times(rot_neg_90_y).times(scale_diag)
-        
+
         Square.insert_transformed_copy_into(this, [], right_wing);
 
         const wing_scale = Mat4.scale(1/Math.sqrt(2), 1, 1)
         let left_tip = Mat4.translation(-3, 0, 0).times(rot_neg_45_z).times(rot_neg_90_y).times(wing_scale).times(rot_45_z).times(Mat4.scale(2, 2, 1))
-        
+
         Triangle.insert_transformed_copy_into(this, [], left_tip);
 
         let right_tip = Mat4.translation(3, 0, 0).times(rot_45_z).times(rot_90_y).times(wing_scale).times(rot_45_z).times(Mat4.scale(2, 2, 1))
@@ -61,7 +61,7 @@ export class MountainProject extends Scene {
         //        texture coordinates as required for cube #2.  You can either do this by modifying the cube code or by modifying
         //        a cube instance's texture_coords after it is already created.
         this.shapes = {
-            box_1: new Terrain(800, 500),
+            terrain: new Terrain(500, 500),
             box_2: new Cube(),
             axis: new Axis_Arrows(),
             bird: new Bird2(),
@@ -82,10 +82,9 @@ export class MountainProject extends Scene {
                 ambient: 1, diffusivity: 0.4, specularity: 0.3,
 
             }),
-            texture: new Material(new Textured_Phong(), {
+            texture: new Material(new MountainShader(), {
                 color: hex_color("#ffffff"),
                 ambient: 0.0, diffusivity: 0.4, specularity: 0.0,
-                texture: new Texture("assets/stars.png")
             }),
         }
 
@@ -123,7 +122,7 @@ export class MountainProject extends Scene {
         let curr_z = scale*Math.sin(2.0*this.angle)
 
         let curr_pos = vec3(curr_x, 0, curr_z)
-  
+
         model_transform = Mat4.identity().times(Mat4.translation(curr_x, 64, curr_z))
             .times(this.get_rot_matrix(curr_pos, this.prev_2))
         this.prev_2 = curr_pos
@@ -140,7 +139,7 @@ export class MountainProject extends Scene {
         let curr_y = scale*Math.sin(2.0*this.angle)
 
         let curr_pos = vec3(curr_x, curr_y, 0)
-  
+
         model_transform = Mat4.identity().times(Mat4.translation(curr_x, 60 + curr_y, -5))
             .times(this.get_rot_matrix(curr_pos, this.prev_3))
         this.prev_3 = curr_pos
@@ -165,18 +164,18 @@ export class MountainProject extends Scene {
             .times(Mat4.rotation(Math.PI*2*(this.t)/this.period, 0, 0, 1))
             .times(Mat4.translation(40, 0, 0))
             .times(Mat4.scale(1.5, 1.5, 1.5));
-        
+
         const light_position = vec4(100, 500, 200, 1);
         const sun_light = model_transform.times(vec4(1, 0, 0, 0))
         program_state.lights = [ new Light(light_position, color(1,1,1,1), 100000000),
             new Light(sun_light, sun_color, 10**20), ]
 
         const origin_loc = model_transform.times(vec4(0, 0, 0, 1))
-        if (origin_loc[1] >37.5) 
+        if (origin_loc[1] >37.5)
         {
             this.shapes.sun.draw(context, program_state, model_transform, this.materials.sun.override({color: sun_color}));
         };
-        
+
     }
 
     display(context, program_state) {
@@ -202,7 +201,7 @@ export class MountainProject extends Scene {
 
         this.draw_bird_3(context, program_state, model_transform);
 
-        this.shapes.box_1.draw(context, program_state, model_transform, this.materials.texture)
+        this.shapes.terrain.draw(context, program_state, model_transform, this.materials.texture)
 
         if (this.attached != undefined)
         {
