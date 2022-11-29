@@ -122,12 +122,20 @@ export class Terrain extends defs.Grid_Patch {
 }
 
 export class MountainShader extends Phong_Shader {
+  constructor(seed_1= "12.9898", seed_2 = "78.233", seed_3 = "43758.5453123", num_lights = 2) {
+    super();
+    this.num_lights = num_lights;
+    this.seed_1 = seed_1;
+    this.seed_2 = seed_2;
+    this.seed_3 = seed_3;
+  }
+
   shared_glsl_code() {
     return super.shared_glsl_code() + `
                 float det_random_2d(vec2 st) {
                     // This gives us what's basically a determanistic 2d random number. To change the seed, mix up 
                     // the constants.
-                    return fract(sin(dot(st.xy, vec2(12.9898,78.233))) * 43758.5453123);
+                    return fract(sin(dot(st.xy, vec2(${this.seed_1},${this.seed_2}))) * ${this.seed_3});
                 }
                 
                 float gen_noise(vec2 pt) {
@@ -155,12 +163,13 @@ export class MountainShader extends Phong_Shader {
                 // Pretty simple, it just loops over the noise function, shrinking down each time
                 float multi_octave_noise(vec2 pt, float amp_scale, float freq_scale) {
                     float accumulator = 0.0;
-                    float starting_amplitude = 0.5;
+                    float starting_amplitude = 0.55;
                     float starting_freq = 1.0;
                     pt *= 8.;
                     
                     #define OCTAVES 8
                     for (int i = 0; i < OCTAVES; i++) {
+                          // Ignore octives 4-7
                           accumulator += starting_amplitude * gen_noise(pt * starting_freq);
                           starting_amplitude *= amp_scale;
                           starting_freq *= freq_scale;
@@ -179,7 +188,7 @@ export class MountainShader extends Phong_Shader {
                 // Wrap the noise function with some default values for params plus the circle mask.
                 float multi_octave_noise_wrapped(vec2 ft) {
                     float circle = circle_texture(ft);
-                    float noise = multi_octave_noise(ft * 2., 0.47, 2.5) * circle;
+                    float noise = multi_octave_noise(ft * 2., 0.46, 2.) * circle;
                     return circle > noise ? noise : circle;
                 }
                 `;
@@ -187,6 +196,7 @@ export class MountainShader extends Phong_Shader {
 
   vertex_glsl_code() {
     // ********* VERTEX SHADER *********
+    // language=Glsl
     return this.shared_glsl_code() + `
                 varying vec2 f_tex_coord;
                 attribute vec3 position, normal;                            
@@ -203,7 +213,8 @@ export class MountainShader extends Phong_Shader {
                     vertex_worldspace = ( model_transform * vec4( position, 1.0 ) ).xyz;
                     // Turn the per-vertex texture coordinate into an interpolated variable.
                     f_tex_coord = texture_coord;
-                    gl_Position = projection_camera_model_transform * vec4( position.x, multi_octave_noise_wrapped(f_tex_coord)*80., position.z, 1.0 );
+                    gl_Position = projection_camera_model_transform * vec4( position.x, multi_octave_noise_wrapped(texture_coord)*80., position.z, 1.0 );
+//                    gl_Position = projection_camera_model_transform * vec4( position.x, (texture_coord.y * texture_coord.x) * 40., position.z, 1.0 );
                   } `;
   }
 
@@ -211,6 +222,7 @@ export class MountainShader extends Phong_Shader {
     // ********* FRAGMENT SHADER *********
     // A fragment is a pixel that's overlapped by the current triangle.
     // Fragments affect the final image or get discarded due to depth.
+    // language=Glsl
     return this.shared_glsl_code() + `
                 varying vec2 f_tex_coord;
                 uniform sampler2D texture;
@@ -230,8 +242,11 @@ export class MountainShader extends Phong_Shader {
                     else color = vec3(0., 0., 1.);
                     
                     // Fuzz the color a bit
+//                    gl_FragColor = vec4( 0, f_tex_coord.x, 0, 1 );
                     gl_FragColor = vec4( color * ((noise_val * 0.8) + 0.2) , 1 );
-                  } `;
+                    gl_FragColor.xyz += phong_model_lights( normalize( N ), vertex_worldspace ) * 0.5;
+                    gl_FragColor.xyz *= (phong_model_lights( normalize( N ), vertex_worldspace ) * 0.3) + 0.7;
+                } `;
   }
 
   update_GPU(context, gpu_addresses, gpu_state, model_transform, material) {
