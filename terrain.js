@@ -138,6 +138,12 @@ export class MountainShader extends Phong_Shader {
                     return fract(sin(dot(st.xy, vec2(${this.seed_1},${this.seed_2}))) * ${this.seed_3});
                 }
                 
+                float det_random_2d_b(vec2 st) {
+                    // This gives us what's basically a determanistic 2d random number. To change the seed, mix up 
+                    // the constants.
+                    return fract(sin(dot(st.xy, vec2(${this.seed_1}32,${this.seed_2}12))) * ${this.seed_3}54);
+                }
+                
                 float gen_noise(vec2 pt) {
                     // We'll need these parts later!
                     vec2 integer = floor(pt);
@@ -148,6 +154,27 @@ export class MountainShader extends Phong_Shader {
                     float br = det_random_2d(integer + vec2(1.0, 0.0));
                     float tl = det_random_2d(integer + vec2(0.0, 1.0));
                     float tr = det_random_2d(integer + vec2(1.0, 1.0));
+                    
+                    // A basic smoothstep - basically we use \`3x^{2}-2x^{3}\` to get a smooth curve between 0 and 1
+                    vec2 smoothed = fraction * fraction * (3.0 - 2.0 * fraction);
+                
+                    // Here, we basically mix the corners by the smoothed fractional values to get one float value 
+                    //  for this point.
+                    return mix(bl, br, smoothed.x) +
+                    (tl - bl)* smoothed.y * (1.0 - smoothed.x) +
+                    (tr - br) * smoothed.x * smoothed.y;
+                }
+                
+                float gen_noise_b(vec2 pt) {
+                    // We'll need these parts later!
+                    vec2 integer = floor(pt);
+                    vec2 fraction = fract(pt);
+                
+                    // We sample four corners for the math below
+                    float bl = det_random_2d_b(integer);
+                    float br = det_random_2d_b(integer + vec2(1.0, 0.0));
+                    float tl = det_random_2d_b(integer + vec2(0.0, 1.0));
+                    float tr = det_random_2d_b(integer + vec2(1.0, 1.0));
                     
                     // A basic smoothstep - basically we use \`3x^{2}-2x^{3}\` to get a smooth curve between 0 and 1
                     vec2 smoothed = fraction * fraction * (3.0 - 2.0 * fraction);
@@ -178,18 +205,59 @@ export class MountainShader extends Phong_Shader {
                     return accumulator;
                 }
                 
+                // Layer multiple octaves of noise! In this case 8 ocataves
+                // Pretty simple, it just loops over the noise function, shrinking down each time
+                float multi_octave_noise_b(vec2 pt, float amp_scale, float freq_scale) {
+                    float accumulator = 0.0;
+                    float starting_amplitude = 0.55;
+                    float starting_freq = 1.0;
+                    pt *= 8.;
+                    
+                    #define OCTAVES 8
+                    for (int i = 0; i < OCTAVES; i++) {
+                          // Ignore octives 4-7
+                          accumulator += starting_amplitude * gen_noise_b(pt * starting_freq);
+                          starting_amplitude *= amp_scale;
+                          starting_freq *= freq_scale;
+                    }
+                    
+                    return accumulator;
+                }
+                
+                float single_octave_noise(vec2 pt, float amp_scale, float freq_scale) {
+                    float accumulator = 0.0;
+                    float starting_amplitude = 0.55;
+                    float starting_freq = 1.0;
+                    pt *= 8.;
+                    
+                    accumulator += starting_amplitude * gen_noise(pt * starting_freq);
+                                        
+                    return accumulator;
+                }
+                
                 // A really simple circle texture. We'll use this to make a circle mask
                 float circle_texture(vec2 ft) {
                   vec2 radial_coord = (ft-0.5)*2.;
                   float modified_len = pow(length(radial_coord), 2.2);
                   return 1.-modified_len;
                 }
+                
+                #define AMP_SCALE 0.46
+                #define FREQ_SCALE 2.
                
                 // Wrap the noise function with some default values for params plus the circle mask.
                 float multi_octave_noise_wrapped(vec2 ft) {
                     float circle = circle_texture(ft);
-                    float noise = multi_octave_noise(ft * 2., 0.46, 2.) * circle;
+                    float noise = multi_octave_noise(ft * 2., AMP_SCALE, FREQ_SCALE) * circle;
                     return circle > noise ? noise : circle;
+                }
+                
+                float multi_octave_noise_wrapped_b(vec2 ft) {
+                    return multi_octave_noise_b(ft * 2., AMP_SCALE, FREQ_SCALE);
+                }
+                
+                float single_octave_noise_wrapped(vec2 pt) { 
+                  return single_octave_noise(pt, AMP_SCALE, FREQ_SCALE);
                 }
                 `;
   }
@@ -199,6 +267,7 @@ export class MountainShader extends Phong_Shader {
     // language=Glsl
     return this.shared_glsl_code() + `
                 varying vec2 f_tex_coord;
+                varying float noisemap_val;
                 attribute vec3 position, normal;                            
                 // Position is expressed in object coordinates.
                 attribute vec2 texture_coord;
@@ -213,8 +282,8 @@ export class MountainShader extends Phong_Shader {
                     vertex_worldspace = ( model_transform * vec4( position, 1.0 ) ).xyz;
                     // Turn the per-vertex texture coordinate into an interpolated variable.
                     f_tex_coord = texture_coord;
-                    gl_Position = projection_camera_model_transform * vec4( position.x, multi_octave_noise_wrapped(texture_coord)*80., position.z, 1.0 );
-//                    gl_Position = projection_camera_model_transform * vec4( position.x, (texture_coord.y * texture_coord.x) * 40., position.z, 1.0 );
+                    noisemap_val = multi_octave_noise_wrapped(texture_coord);
+                    gl_Position = projection_camera_model_transform * vec4( position.x, noisemap_val*80., position.z, 1.0 );
                   } `;
   }
 
@@ -225,6 +294,7 @@ export class MountainShader extends Phong_Shader {
     // language=Glsl
     return this.shared_glsl_code() + `
                 varying vec2 f_tex_coord;
+                varying float noisemap_val;
                 uniform sampler2D texture;
                 uniform float animation_time;
 
@@ -233,18 +303,22 @@ export class MountainShader extends Phong_Shader {
                     // vec4 tex_color = texture2D( texture, f_tex_coord );
                     // if( tex_color.w < .01 ) discard;
                     
-                    float noise_val = multi_octave_noise_wrapped(f_tex_coord);
+                    
+                    float fuzz = (multi_octave_noise_wrapped_b(f_tex_coord * 16.) - 0.5);
+
+                    float noise_val_rough = noisemap_val + fuzz * 0.15;
+                    float noise_val_fine = noisemap_val + fuzz * 0.25;
                     
                     vec3 color;
+//                    vec3 color = vec3(noise_val, noise_val, noise_val);
                     
-                    if (noise_val > 0.55) color = vec3(1., 1., 1.);
-                    else if (noise_val > 0.3) color = vec3(0., 0.6015625, 0.09019607843);
-                    else color = vec3(0., 0., 1.);
+                    if (noise_val_rough > 0.55) color = vec3(1., 1., 1.) * ((noise_val_fine * 0.2) + 0.8);
+                    else if (noise_val_rough > 0.3) color = vec3(0., 0.6015625, 0.09019607843) * ((noise_val_fine * 0.4) + 0.6);
+                    else color = vec3(0.058823529411764705, 0.368627451, 0.6117647059) * ((noise_val_fine * 0.2) + 0.6);
                     
                     // Fuzz the color a bit
-//                    gl_FragColor = vec4( 0, f_tex_coord.x, 0, 1 );
-                    gl_FragColor = vec4( color * ((noise_val * 0.8) + 0.2) , 1 );
-                    gl_FragColor.xyz += phong_model_lights( normalize( N ), vertex_worldspace ) * 0.5;
+                    gl_FragColor = vec4( color  , 1 );
+//                    gl_FragColor.xyz += phong_model_lights( normalize( N ), vertex_worldspace ) * 0.2;
                     gl_FragColor.xyz *= (phong_model_lights( normalize( N ), vertex_worldspace ) * 0.3) + 0.7;
                 } `;
   }
