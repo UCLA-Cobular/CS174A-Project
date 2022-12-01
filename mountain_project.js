@@ -100,6 +100,7 @@ export class MountainProject extends Scene {
         this.angle = 0;
         this.prev_2 = vec3(12, 0, 0);
         this.prev_3 = vec3(12, 0, 0);
+        this.prev_4 = vec3(22.5, 0, 0);
         this.period = 20
 
     }
@@ -110,6 +111,7 @@ export class MountainProject extends Scene {
         this.key_triggered_button("View bird 1", ["Control", "1"], () => this.attached = () => this.bird_1);
         this.key_triggered_button("View bird 2", ["Control", "2"], () => this.attached = () => this.bird_2);
         this.key_triggered_button("View bird 3", ["Control", "3"], () => this.attached = () => this.bird_3);
+        this.key_triggered_button("View bird 4", ["Control", "4"], () => this.attached = () => this.bird_4);
         this.key_triggered_button("Speed up", ["Control", "f"], () => {this.period = Math.max(20*0.64*0.64, this.period*0.8)});
         this.key_triggered_button("Slow down", ["Control", "s"], () => {this.period = Math.min(20/0.64/0.64, this.period/0.8)});
         this.key_triggered_button("Default Speed", ["Control", "d"], () => {this.period = 20});
@@ -133,7 +135,7 @@ export class MountainProject extends Scene {
 
         let curr_pos = vec3(curr_x, 0, curr_z)
 
-        model_transform = Mat4.identity().times(Mat4.translation(curr_x, 64, curr_z))
+        model_transform = Mat4.identity().times(Mat4.translation(curr_x, 67, curr_z))
             .times(this.get_rot_matrix(curr_pos, this.prev_2))
         this.prev_2 = curr_pos
         this.shapes.bird.draw(context, program_state, model_transform, this.materials.phong.override({color:green}));
@@ -155,6 +157,23 @@ export class MountainProject extends Scene {
         this.prev_3 = curr_pos
         this.shapes.bird.draw(context, program_state, model_transform, this.materials.phong.override({color:green}));
         this.bird_3 = Mat4.inverse(model_transform.times(Mat4.rotation(Math.PI, 0, 1, 0)).times(Mat4.rotation(-0.9, 1, 0, 0)).times(Mat4.translation(0, 0, 15)));
+    }
+
+    draw_bird_4(context, program_state, model_transform)
+    {
+        const pink = hex_color("#FF69B4");
+        let scale = 9
+
+        let curr_x = scale*(2+.5*Math.cos(4*this.angle))*Math.cos(this.angle)
+        let curr_z = scale*(2+.5*Math.cos(4*this.angle))*Math.sin(this.angle)
+
+        let curr_pos = vec3(curr_x, 0, curr_z)
+
+        model_transform = Mat4.identity().times(Mat4.translation(curr_x, 56, curr_z))
+            .times(this.get_rot_matrix(curr_pos, this.prev_4))
+        this.prev_4 = curr_pos
+        this.shapes.bird.draw(context, program_state, model_transform, this.materials.phong.override({color:pink}));
+        this.bird_4 = Mat4.inverse(model_transform.times(Mat4.rotation(Math.PI, 0, 1, 0)).times(Mat4.rotation(-0.9, 1, 0, 0)).times(Mat4.translation(0, 0, 15)));
     }
 
     get_rot_matrix(curr, prev)
@@ -245,6 +264,8 @@ export class MountainProject extends Scene {
         this.draw_bird_2(context, program_state, model_transform);
 
         this.draw_bird_3(context, program_state, model_transform);
+        
+        this.draw_bird_4(context, program_state, model_transform);
 
         this.shapes.terrain.draw(context, program_state, model_transform, this.materials.texture)
 
