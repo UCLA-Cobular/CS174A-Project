@@ -65,7 +65,8 @@ export class MountainProject extends Scene {
             box_2: new Cube(),
             axis: new Axis_Arrows(),
             bird: new Bird2(),
-            sun: new Subdivision_Sphere(4)
+            sun: new Subdivision_Sphere(4),
+            moon: new Subdivision_Sphere(4)
         }
 
         // TODO:  Create the materials required to texture both cubes with the correct images and settings.
@@ -78,6 +79,11 @@ export class MountainProject extends Scene {
 
             }),
             sun: new Material(new Sun_Shader(), {
+                color: hex_color("#ffff00"),
+                ambient: 1, diffusivity: 0.4, specularity: 0.3,
+
+            }),
+            moon: new Material(new Sun_Shader(), {
                 color: hex_color("#ffff00"),
                 ambient: 1, diffusivity: 0.4, specularity: 0.3,
 
@@ -160,20 +166,40 @@ export class MountainProject extends Scene {
         this.period = 20.0;
         let factor = 0.5 + 0.5*Math.sin(Math.PI*2*this.t/this.period);
         const sun_color = hex_color("#ff9a00")
-        model_transform = Mat4.identity().times(Mat4.translation(0, 37.5, 0))
+        let sun_model_transform = Mat4.identity().times(Mat4.translation(0, 37.5, 0))
             .times(Mat4.rotation(Math.PI*2*(this.t)/this.period, 0, 0, 1))
             .times(Mat4.translation(40, 0, 0))
             .times(Mat4.scale(1.5, 1.5, 1.5));
 
         const light_position = vec4(100, 500, 200, 1);
-        const sun_light = model_transform.times(vec4(1, 0, 0, 0))
-        program_state.lights = [ new Light(light_position, color(1,1,1,1), 100000000),
-            new Light(sun_light, sun_color, 10**20), ]
+        const sun_light = sun_model_transform.times(vec4(1, 0, 0, 0))
 
-        const origin_loc = model_transform.times(vec4(0, 0, 0, 1))
-        if (origin_loc[1] >37.5)
+        const sun_origin_loc = sun_model_transform.times(vec4(0, 0, 0, 1))
+        
+
+        program_state.lights = [ new Light(light_position, color(1,1,1,1), 100000000) ]
+        
+        if (sun_origin_loc[1] >37.5)
         {
-            this.shapes.sun.draw(context, program_state, model_transform, this.materials.sun.override({color: sun_color}));
+            program_state.lights = [ new Light(light_position, color(1,1,1,1), 100000000),
+            new Light(sun_light, sun_color, 10**20), ]
+            this.shapes.sun.draw(context, program_state, sun_model_transform, this.materials.sun.override({color: sun_color}));
+        };
+
+        let moon_model_transform = Mat4.identity().times(Mat4.translation(0, 37.5, 0))
+            .times(Mat4.rotation(Math.PI + Math.PI*2*(this.t)/this.period, 0, 0, 1))
+            .times(Mat4.translation(40, 0, 0))
+            .times(Mat4.scale(1.5, 1.5, 1.5));
+
+        const moon_color = hex_color("#C0C0C0")
+        const moon_light = moon_model_transform.times(vec4(1, 0, 0, 0))
+        const moon_origin_loc = moon_model_transform.times(vec4(0, 0, 0, 1))
+        
+        if (moon_origin_loc[1] >37.5)
+        {
+            program_state.lights = [ new Light(light_position, color(1,1,1,1), 100000000),
+            new Light(moon_light, moon_color, 10**20), ]
+            this.shapes.moon.draw(context, program_state, moon_model_transform, this.materials.moon.override({color: moon_color}));
         };
 
     }

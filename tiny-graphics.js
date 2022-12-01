@@ -1387,24 +1387,24 @@ const Webgl_Manager = tiny.Webgl_Manager =
       let dark_blue = hex_color("#00008B");
       let sunset = hex_color("#ee5d6c");
 
-      let bg_color;
+      let bg_color = color(light_blue[0]*factor + dark_blue[0]*(1-factor), light_blue[1]*factor + dark_blue[1]*(1-factor), light_blue[2]*factor + dark_blue[2]*(1-factor), 1) 
 
       //START OF SUNSET CODE
       // factor = (time/1000.0/10) % 3;
-      if(factor >= 0 && factor < 1)
-      {
-          bg_color = color(light_blue[0]*(1-factor) + sunset[0]*factor, light_blue[1]*(1-factor) + sunset[1]*factor, light_blue[2]*(1-factor) + sunset[2]*factor, 1)
-      }
-      else if(factor < 2)
-      {
-          factor = factor - 1;
-          bg_color = color(sunset[0]*(1-factor) + dark_blue[0]*factor, sunset[1]*(1-factor) + dark_blue[1]*factor, sunset[2]*(1-factor) + dark_blue[2]*factor, 1)
-      }
-      else
-      {
-        factor = factor - 2;
-        bg_color = color(dark_blue[0]*(1-factor) + light_blue[0]*factor, dark_blue[1]*(1-factor) + light_blue[1]*factor, dark_blue[2]*(1-factor) + light_blue[2]*factor, 1)
-      }
+      // if(factor >= 0 && factor < 1)
+      // {
+      //     bg_color = color(light_blue[0]*(1-factor) + sunset[0]*factor, light_blue[1]*(1-factor) + sunset[1]*factor, light_blue[2]*(1-factor) + sunset[2]*factor, 1)
+      // }
+      // else if(factor < 2)
+      // {
+      //     factor = factor - 1;
+      //     bg_color = color(sunset[0]*(1-factor) + dark_blue[0]*factor, sunset[1]*(1-factor) + dark_blue[1]*factor, sunset[2]*(1-factor) + dark_blue[2]*factor, 1)
+      // }
+      // else
+      // {
+      //   factor = factor - 2;
+      //   bg_color = color(dark_blue[0]*(1-factor) + light_blue[0]*factor, dark_blue[1]*(1-factor) + light_blue[1]*factor, dark_blue[2]*(1-factor) + light_blue[2]*factor, 1)
+      // }
 
       gl.clearColor(bg_color[0], bg_color[1], bg_color[2], bg_color[3]);  // Clear the canvas with the background color.
 
