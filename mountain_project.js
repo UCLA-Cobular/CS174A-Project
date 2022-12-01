@@ -100,6 +100,7 @@ export class MountainProject extends Scene {
         this.angle = 0;
         this.prev_2 = vec3(12, 0, 0);
         this.prev_3 = vec3(12, 0, 0);
+        this.period = 20
 
     }
 
@@ -109,12 +110,15 @@ export class MountainProject extends Scene {
         this.key_triggered_button("View bird 1", ["Control", "1"], () => this.attached = () => this.bird_1);
         this.key_triggered_button("View bird 2", ["Control", "2"], () => this.attached = () => this.bird_2);
         this.key_triggered_button("View bird 3", ["Control", "3"], () => this.attached = () => this.bird_3);
+        this.key_triggered_button("Speed up", ["Control", "f"], () => {this.period = Math.max(20*0.64*0.64, this.period*0.8)});
+        this.key_triggered_button("Slow down", ["Control", "s"], () => {this.period = Math.min(20/0.64/0.64, this.period/0.8)});
+        this.key_triggered_button("Default Speed", ["Control", "d"], () => {this.period = 20});
     }
 
     draw_bird_1(context, program_state, model_transform)
     {
         const blue = hex_color("#1a9ffa");
-        model_transform = model_transform.times(Mat4.rotation(this.t, 0, 1, 0)).times(Mat4.translation(-10, 72, 0));
+        model_transform = model_transform.times(Mat4.rotation(this.angle, 0, 1, 0)).times(Mat4.translation(-10, 72, 0));
         this.shapes.bird.draw(context, program_state, model_transform, this.materials.phong.override({color:blue}));
         this.bird_1 = Mat4.inverse(model_transform.times(Mat4.rotation(Math.PI, 0, 1, 0)).times(Mat4.rotation(-0.9, 1, 0, 0)).times(Mat4.translation(0, 0, 15)));
     }
@@ -163,11 +167,9 @@ export class MountainProject extends Scene {
 
     draw_sun(context, program_state, model_transform)
     {
-        this.period = 20.0;
-        let factor = 0.5 + 0.5*Math.sin(Math.PI*2*this.t/this.period);
         const sun_color = hex_color("#ff9a00")
         let sun_model_transform = Mat4.identity().times(Mat4.translation(0, 37.5, 0))
-            .times(Mat4.rotation(Math.PI*2*(this.t)/this.period, 0, 0, 1))
+            .times(Mat4.rotation(Math.PI*2*(this.angle)/20, 0, 0, 1))
             .times(Mat4.translation(40, 0, 0))
             .times(Mat4.scale(1.5, 1.5, 1.5));
 
@@ -187,7 +189,7 @@ export class MountainProject extends Scene {
         };
 
         let moon_model_transform = Mat4.identity().times(Mat4.translation(0, 37.5, 0))
-            .times(Mat4.rotation(Math.PI + Math.PI*2*(this.t)/this.period, 0, 0, 1))
+            .times(Mat4.rotation(Math.PI + Math.PI*2*(this.angle)/20, 0, 0, 1))
             .times(Mat4.translation(40, 0, 0))
             .times(Mat4.scale(1.5, 1.5, 1.5));
 
@@ -204,7 +206,19 @@ export class MountainProject extends Scene {
 
     }
 
+    draw_bg(context, program_state, model_transform)
+    {
+        let light_blue = hex_color("#ADD8E6");
+        let dark_blue = hex_color("#00008B");
+        let sunset = hex_color("#ee5d6c");
+        
+        let bg_color = color(light_blue[0]*this.factor + dark_blue[0]*(1-this.factor), light_blue[1]*this.factor + dark_blue[1]*(1-this.factor), light_blue[2]*this.factor + dark_blue[2]*(1-this.factor), 1)
+
+        context.context.clearColor(bg_color[0], bg_color[1], bg_color[2], bg_color[3]);
+    }
+
     display(context, program_state) {
+        
         if (!context.scratchpad.controls) {
             this.children.push(context.scratchpad.controls = new defs.Movement_Controls());
             // Define the global camera and projection matrices, which are stored in program_state.
@@ -216,8 +230,13 @@ export class MountainProject extends Scene {
 
         this.t = program_state.animation_time / 1000;
         this.dt = program_state.animation_delta_time / 1000;
-        this.angle += this.dt;
+        this.angle += this.dt*20/this.period;
+        
+        this.factor = 0.5 + 0.5*Math.sin(Math.PI*2*this.angle/20);
+        
         let model_transform = Mat4.identity();
+
+        this.draw_bg(context)
 
         this.draw_sun(context, program_state, model_transform);
 
@@ -234,8 +253,6 @@ export class MountainProject extends Scene {
             let desired = this.attached();
             program_state.camera_inverse = desired.map((x,i) => Vector.from(program_state.camera_inverse[i]).mix(x, 0.1));
         }
-
-        // context.clearColor(Math.random(), 0, 0, 1);
 
     }
 }
@@ -426,7 +443,7 @@ class Sun_Shader extends Shader {
             material = Object.assign({}, defaults, material);
 
             this.send_material(context, gpu_addresses, material);
-            this.send_gpu_state(context, gpu_addresses, gpu_state, model_transform);
+            this.send_gpu_state(context, gpu_addresses, gpu_state, model_transform);  
         }
 
 }
