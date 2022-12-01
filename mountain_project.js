@@ -90,7 +90,7 @@ export class MountainProject extends Scene {
             }),
             texture: new Material(new MountainShader(), {
                 color: hex_color("#ffffff"),
-                ambient: 0.0, diffusivity: 0.4, specularity: 0.0,
+                ambient: 0.2, diffusivity: 0.4, specularity: 0.0,
             }),
         }
 
@@ -196,10 +196,10 @@ export class MountainProject extends Scene {
         const sun_light = sun_model_transform.times(vec4(1, 0, 0, 0))
 
         const sun_origin_loc = sun_model_transform.times(vec4(0, 0, 0, 1))
-        
+
 
         program_state.lights = [ new Light(light_position, color(1,1,1,1), 100000000) ]
-        
+
         if (sun_origin_loc[1] >37.5)
         {
             program_state.lights = [ new Light(light_position, color(1,1,1,1), 100000000),
@@ -215,7 +215,7 @@ export class MountainProject extends Scene {
         const moon_color = hex_color("#C0C0C0")
         const moon_light = moon_model_transform.times(vec4(1, 0, 0, 0))
         const moon_origin_loc = moon_model_transform.times(vec4(0, 0, 0, 1))
-        
+
         if (moon_origin_loc[1] >37.5)
         {
             program_state.lights = [ new Light(light_position, color(1,1,1,1), 100000000),
@@ -230,14 +230,14 @@ export class MountainProject extends Scene {
         let light_blue = hex_color("#ADD8E6");
         let dark_blue = hex_color("#00008B");
         let sunset = hex_color("#ee5d6c");
-        
+
         let bg_color = color(light_blue[0]*this.factor + dark_blue[0]*(1-this.factor), light_blue[1]*this.factor + dark_blue[1]*(1-this.factor), light_blue[2]*this.factor + dark_blue[2]*(1-this.factor), 1)
 
         context.context.clearColor(bg_color[0], bg_color[1], bg_color[2], bg_color[3]);
     }
 
     display(context, program_state) {
-        
+
         if (!context.scratchpad.controls) {
             this.children.push(context.scratchpad.controls = new defs.Movement_Controls());
             // Define the global camera and projection matrices, which are stored in program_state.
@@ -250,9 +250,9 @@ export class MountainProject extends Scene {
         this.t = program_state.animation_time / 1000;
         this.dt = program_state.animation_delta_time / 1000;
         this.angle += this.dt*20/this.period;
-        
+
         this.factor = 0.5 + 0.5*Math.sin(Math.PI*2*this.angle/20);
-        
+
         let model_transform = Mat4.identity();
 
         this.draw_bg(context)
@@ -264,10 +264,11 @@ export class MountainProject extends Scene {
         this.draw_bird_2(context, program_state, model_transform);
 
         this.draw_bird_3(context, program_state, model_transform);
-        
+
         this.draw_bird_4(context, program_state, model_transform);
 
         this.shapes.terrain.draw(context, program_state, model_transform, this.materials.texture)
+        // this.shapes.box_2.draw(context, program_state, model_transform.times(Mat4.translation(-10, 80, 0)), this.materials.phong)
 
         if (this.attached != undefined)
         {
@@ -464,7 +465,7 @@ class Sun_Shader extends Shader {
             material = Object.assign({}, defaults, material);
 
             this.send_material(context, gpu_addresses, material);
-            this.send_gpu_state(context, gpu_addresses, gpu_state, model_transform);  
+            this.send_gpu_state(context, gpu_addresses, gpu_state, model_transform);
         }
 
 }

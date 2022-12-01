@@ -276,14 +276,28 @@ export class MountainShader extends Phong_Shader {
                 uniform mat4 projection_camera_model_transform;
         
                 void main(){
-                    // Used in the fragment shader. Can calc here since every vertex will have the same slope.
-                    N = normalize( mat3( model_transform ) * normal / squared_scale);
                     vertex_worldspace = ( model_transform * vec4( position, 1.0 ) ).xyz;
+
+                    #define OFFSET 0.002
+                    #define HEIGHT_SCALE 80.0
+                    noisemap_val = multi_octave_noise_wrapped(texture_coord);
+                    float next_noisemap_1 = multi_octave_noise_wrapped(texture_coord+vec2(0, OFFSET));
+                    float next_noisemap_2 = multi_octave_noise_wrapped(texture_coord+vec2(OFFSET, 0));
+
+                    // Find the normal created from the triangle of the three points
+                    vec3 point_0 = vec3(vertex_worldspace.x, noisemap_val * HEIGHT_SCALE, vertex_worldspace.z);
+                    vec3 point_1 = vec3(vertex_worldspace.x, next_noisemap_1 * HEIGHT_SCALE, vertex_worldspace.z+OFFSET);
+                    vec3 point_2 = vec3(vertex_worldspace.x+OFFSET, next_noisemap_2 * HEIGHT_SCALE, vertex_worldspace.z);
+                    
+                    vec3 normal_0 = normalize(cross(point_1-point_0,point_2-point_0));
+
+                    vec3 bumped_normal = normal_0;
+//                    vec3 bumped_normal = dot(normal, vec3(noisemap_val, noisemap_val, noisemap_val)) * normal;
+                    N = normalize( mat3( model_transform ) * bumped_normal / squared_scale);
                     // Turn the per-vertex texture coordinate into an interpolated variable.
                     f_tex_coord = texture_coord;
                     // Interpolate the heightmap data
-                    noisemap_val = multi_octave_noise_wrapped(texture_coord);
-                    gl_Position = projection_camera_model_transform * vec4( position.x, noisemap_val*80., position.z, 1.0 );
+                    gl_Position = projection_camera_model_transform * vec4( vertex_worldspace.x, noisemap_val * HEIGHT_SCALE, vertex_worldspace.z, 1.0 );
                   } `;
   }
 
@@ -308,8 +322,8 @@ export class MountainShader extends Phong_Shader {
                     else if (noise_val_rough > 0.3) color = vec3(0., 0.6015625, 0.09019607843) * ((noise_val_fine * 0.4) + 0.6);
                     else color = vec3(0.058823529411764705, 0.368627451, 0.6117647059) * ((noise_val_fine * 0.2) + 0.6);
                     
-                    gl_FragColor = vec4( color  , 1 );
-                    gl_FragColor.xyz *= (phong_model_lights( normalize( N ), vertex_worldspace ) * 0.3) + 0.7;
+                    gl_FragColor = vec4( color * ambient , 1 );
+                    gl_FragColor.xyz += (phong_model_lights( normalize( N ), vertex_worldspace ));
                 } `;
   }
 
