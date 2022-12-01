@@ -276,12 +276,12 @@ export class MountainShader extends Phong_Shader {
                 uniform mat4 projection_camera_model_transform;
         
                 void main(){
-                    // The vertex's final resting place (in NDCS):
-                    // The final normal vector in screen space.
+                    // Used in the fragment shader. Can calc here since every vertex will have the same slope.
                     N = normalize( mat3( model_transform ) * normal / squared_scale);
                     vertex_worldspace = ( model_transform * vec4( position, 1.0 ) ).xyz;
                     // Turn the per-vertex texture coordinate into an interpolated variable.
                     f_tex_coord = texture_coord;
+                    // Interpolate the heightmap data
                     noisemap_val = multi_octave_noise_wrapped(texture_coord);
                     gl_Position = projection_camera_model_transform * vec4( position.x, noisemap_val*80., position.z, 1.0 );
                   } `;
@@ -295,30 +295,20 @@ export class MountainShader extends Phong_Shader {
     return this.shared_glsl_code() + `
                 varying vec2 f_tex_coord;
                 varying float noisemap_val;
-                uniform sampler2D texture;
-                uniform float animation_time;
 
                 void main(){
-                    // Sample the texture image in the correct place:
-                    // vec4 tex_color = texture2D( texture, f_tex_coord );
-                    // if( tex_color.w < .01 ) discard;
-                    
-                    
                     float fuzz = (multi_octave_noise_wrapped_b(f_tex_coord * 16.) - 0.5);
 
                     float noise_val_rough = noisemap_val + fuzz * 0.15;
                     float noise_val_fine = noisemap_val + fuzz * 0.25;
                     
                     vec3 color;
-//                    vec3 color = vec3(noise_val, noise_val, noise_val);
                     
                     if (noise_val_rough > 0.55) color = vec3(1., 1., 1.) * ((noise_val_fine * 0.2) + 0.8);
                     else if (noise_val_rough > 0.3) color = vec3(0., 0.6015625, 0.09019607843) * ((noise_val_fine * 0.4) + 0.6);
                     else color = vec3(0.058823529411764705, 0.368627451, 0.6117647059) * ((noise_val_fine * 0.2) + 0.6);
                     
-                    // Fuzz the color a bit
                     gl_FragColor = vec4( color  , 1 );
-//                    gl_FragColor.xyz += phong_model_lights( normalize( N ), vertex_worldspace ) * 0.2;
                     gl_FragColor.xyz *= (phong_model_lights( normalize( N ), vertex_worldspace ) * 0.3) + 0.7;
                 } `;
   }
