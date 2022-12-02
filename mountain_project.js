@@ -122,7 +122,7 @@ export class MountainProject extends Scene {
         const blue = hex_color("#1a9ffa");
         model_transform = model_transform.times(Mat4.rotation(this.angle, 0, 1, 0)).times(Mat4.translation(-10, 72, 0));
         this.shapes.bird.draw(context, program_state, model_transform, this.materials.phong.override({color:blue}));
-        this.bird_1 = Mat4.inverse(model_transform.times(Mat4.rotation(Math.PI, 0, 1, 0)).times(Mat4.rotation(-0.9, 1, 0, 0)).times(Mat4.translation(0, 0, 15)));
+        this.bird_1 = Mat4.inverse(model_transform.times(Mat4.rotation(Math.PI, 0, 1, 0)).times(Mat4.rotation(-0.9, 1, 0, 0)).times(Mat4.translation(0, 0, 22)));
     }
 
     draw_bird_2(context, program_state, model_transform)
@@ -139,7 +139,7 @@ export class MountainProject extends Scene {
             .times(this.get_rot_matrix(curr_pos, this.prev_2))
         this.prev_2 = curr_pos
         this.shapes.bird.draw(context, program_state, model_transform, this.materials.phong.override({color:green}));
-        this.bird_2 = Mat4.inverse(model_transform.times(Mat4.rotation(Math.PI, 0, 1, 0)).times(Mat4.rotation(-0.9, 1, 0, 0)).times(Mat4.translation(0, 0, 15)));
+        this.bird_2 = Mat4.inverse(model_transform.times(Mat4.rotation(Math.PI, 0, 1, 0)).times(Mat4.rotation(-0.9, 1, 0, 0)).times(Mat4.translation(0, 0, 22)));
     }
 
     draw_bird_3(context, program_state, model_transform)
@@ -156,7 +156,7 @@ export class MountainProject extends Scene {
             .times(this.get_rot_matrix(curr_pos, this.prev_3))
         this.prev_3 = curr_pos
         this.shapes.bird.draw(context, program_state, model_transform, this.materials.phong.override({color:green}));
-        this.bird_3 = Mat4.inverse(model_transform.times(Mat4.rotation(Math.PI, 0, 1, 0)).times(Mat4.rotation(-0.9, 1, 0, 0)).times(Mat4.translation(0, 0, 15)));
+        this.bird_3 = Mat4.inverse(model_transform.times(Mat4.rotation(Math.PI, 0, 1, 0)).times(Mat4.rotation(-0.9, 1, 0, 0)).times(Mat4.translation(0, 0, 22)));
     }
 
     draw_bird_4(context, program_state, model_transform)
@@ -173,7 +173,7 @@ export class MountainProject extends Scene {
             .times(this.get_rot_matrix(curr_pos, this.prev_4))
         this.prev_4 = curr_pos
         this.shapes.bird.draw(context, program_state, model_transform, this.materials.phong.override({color:pink}));
-        this.bird_4 = Mat4.inverse(model_transform.times(Mat4.rotation(Math.PI, 0, 1, 0)).times(Mat4.rotation(-0.9, 1, 0, 0)).times(Mat4.translation(0, 0, 15)));
+        this.bird_4 = Mat4.inverse(model_transform.times(Mat4.rotation(Math.PI, 0, 1, 0)).times(Mat4.rotation(-0.9, 1, 0, 0)).times(Mat4.translation(0, 0, 22)));
     }
 
     get_rot_matrix(curr, prev)
