@@ -187,6 +187,7 @@ export class MountainProject extends Scene {
     draw_sun(context, program_state, model_transform)
     {
         const sun_color = hex_color("#ff9a00")
+        const moon_color = hex_color("#C0C0C0")
         let sun_model_transform = Mat4.identity().times(Mat4.translation(0, 37.5, 0))
             .times(Mat4.rotation(Math.PI*2*(this.angle)/20, 0, 0, 1))
             .times(Mat4.translation(40, 0, 0))
@@ -197,13 +198,32 @@ export class MountainProject extends Scene {
 
         const sun_origin_loc = sun_model_transform.times(vec4(0, 0, 0, 1))
 
+        let light_color = color(sun_color[0]*this.factor + moon_color[0]*(1-this.factor), sun_color[1]*this.factor + moon_color[1]*(1-this.factor), sun_color[2]*this.factor + moon_color[2]*(1-this.factor), 1)
 
-        program_state.lights = [ new Light(light_position, color(1,1,1,1), 100000000) ]
-
+        let scale = 0;
+        if(this.factor <= 0.25)
+        {
+            scale = this.factor /0.25
+        }
+        else if(this.factor <= 0.5)
+        {
+            scale = (0.5 -this.factor) /0.25
+        }
+        else if(this.factor <= 0.75)
+        {
+            scale = (this.factor - 0.5) /0.25
+            console.log(scale)
+        }
+        else
+        {
+            scale = (1 -this.factor) /0.25
+        }
+        
+        program_state.lights = [ new Light(light_position, color(1,1,1,1), 100000000),
+            new Light(sun_light, light_color, 50*scale), ]
+        
         if (sun_origin_loc[1] >37.5)
         {
-            program_state.lights = [ new Light(light_position, color(1,1,1,1), 100000000),
-            new Light(sun_light, sun_color, 10**20), ]
             this.shapes.sun.draw(context, program_state, sun_model_transform, this.materials.sun.override({color: sun_color}));
         };
 
@@ -212,14 +232,13 @@ export class MountainProject extends Scene {
             .times(Mat4.translation(40, 0, 0))
             .times(Mat4.scale(1.5, 1.5, 1.5));
 
-        const moon_color = hex_color("#C0C0C0")
         const moon_light = moon_model_transform.times(vec4(1, 0, 0, 0))
         const moon_origin_loc = moon_model_transform.times(vec4(0, 0, 0, 1))
 
         if (moon_origin_loc[1] >37.5)
         {
             program_state.lights = [ new Light(light_position, color(1,1,1,1), 100000000),
-            new Light(moon_light, moon_color, 10**20), ]
+            new Light(moon_light, light_color, 50*scale), ]
             this.shapes.moon.draw(context, program_state, moon_model_transform, this.materials.moon.override({color: moon_color}));
         };
 
