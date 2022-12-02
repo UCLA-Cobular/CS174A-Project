@@ -1,4 +1,5 @@
 import {defs, tiny} from "./examples/common.js";
+
 const Phong_Shader = defs.Phong_Shader;
 
 
@@ -10,7 +11,7 @@ const Phong_Shader = defs.Phong_Shader;
  * @return tiny.Vector3
  */
 function NextRowFunction(progress_ratio, prev_pt) {
-  return tiny.Vector3.create(progress_ratio*10, progress_ratio*10, progress_ratio*10)
+  return tiny.Vector3.create(progress_ratio * 10, progress_ratio * 10, progress_ratio * 10);
 }
 
 function random(a, b) {
@@ -20,10 +21,10 @@ function random(a, b) {
   // const sin = Math.sin(dot)
   // const prefract = sin * 43758.5453123
   // return prefract % 1
-  return (Math.sin(a * 12.9898 + b * 78.233) * 43758.5453123) % 1
+  return (Math.sin(a * 12.9898 + b * 78.233) * 43758.5453123) % 1;
 }
 
-function noise (x, y) {
+function noise(x, y) {
   // vec2 i = floor(st);
   // vec2 f = fract(st);
   //
@@ -45,15 +46,15 @@ function noise (x, y) {
   //   (d - b) * u.x * u.y;
 
   const ix = Math.floor(x), iy = Math.floor(y);
-  const fx = x % 1, fy = y % 1
+  const fx = x % 1, fy = y % 1;
 
   const ra = random(ix, iy);
   const rb = random(ix + 1.0, iy);
   const rc = random(ix, iy + 1.0);
   const rd = random(ix + 1.0, iy + 1.0);
 
-  const ux = fx * fx * (3-2*fx);
-  const uy = fy * fy * (3-2*fy);
+  const ux = fx * fx * (3 - 2 * fx);
+  const uy = fy * fy * (3 - 2 * fy);
 
   return ((1 - ux) * (ra) + (rb * ux)) +
     (rc - ra) * uy * (1.0 - ux) +
@@ -83,12 +84,12 @@ function multi_octave_noise(a, b, amp_scale, freq_scale) {
   b *= 8;
 
   for (let i = 0; i < 4; i++) {
-      pt += amplitude * noise(a * freq, b * freq);
-      amplitude *= amp_scale;
-      freq *= freq_scale;
+    pt += amplitude * noise(a * freq, b * freq);
+    amplitude *= amp_scale;
+    freq *= freq_scale;
   }
 
-  return pt
+  return pt;
 }
 
 function circle_texture(a, b) {
@@ -110,19 +111,19 @@ function multi_octave_noise_wrapped(a, b) {
 
 export class Terrain extends defs.Grid_Patch {
   constructor(subdivisions, leg_size) {
-    const step = leg_size / subdivisions
-    const initial_corner_point = tiny.vec3(-leg_size/2, 0, -leg_size/2);
+    const step = leg_size / subdivisions;
+    const initial_corner_point = tiny.vec3(-leg_size / 2, 0, -leg_size / 2);
 
     const column_operation = (t, p) => tiny.Mat4.translation(step, 0, 0).times(p.to4(1)).to3();
     const row_operation = (s, p) => p ? tiny.Mat4.translation(0, 0, step).times(p.to4(1)).to3()
       : initial_corner_point;
 
-    super(subdivisions, subdivisions, row_operation, column_operation, [[0,1], [0,1]]);
+    super(subdivisions, subdivisions, row_operation, column_operation, [[0, 1], [0, 1]]);
   }
 }
 
 export class MountainShader extends Phong_Shader {
-  constructor(seed_1= "12.9898", seed_2 = "78.233", seed_3 = "43758.5453123", num_lights = 2) {
+  constructor(seed_1 = "12.9898", seed_2 = "78.233", seed_3 = "43758.5453123", num_lights = 2) {
     super();
     this.num_lights = num_lights;
     this.seed_1 = seed_1;
@@ -197,9 +198,11 @@ export class MountainShader extends Phong_Shader {
                     #define OCTAVES 8
                     for (int i = 0; i < OCTAVES; i++) {
                           // Ignore octives 4-7
-                          accumulator += starting_amplitude * gen_noise(pt * starting_freq);
-                          starting_amplitude *= amp_scale;
-                          starting_freq *= freq_scale;
+                          // if (i < 4 || i > 6) {
+                            accumulator += starting_amplitude * gen_noise(pt * starting_freq);
+                            starting_amplitude *= amp_scale;
+                            starting_freq *= freq_scale;
+                          // };
                     }
                     
                     return accumulator;
@@ -213,9 +216,9 @@ export class MountainShader extends Phong_Shader {
                     float starting_freq = 1.0;
                     pt *= 8.;
                     
-                    #define OCTAVES 8
-                    for (int i = 0; i < OCTAVES; i++) {
-                          // Ignore octives 4-7
+                    #define OCTAVES_B 8
+                    for (int i = 0; i < OCTAVES_B; i++) {
+                          // Ignore octaves 4-6
                           accumulator += starting_amplitude * gen_noise_b(pt * starting_freq);
                           starting_amplitude *= amp_scale;
                           starting_freq *= freq_scale;
@@ -266,39 +269,60 @@ export class MountainShader extends Phong_Shader {
     // ********* VERTEX SHADER *********
     // language=Glsl
     return this.shared_glsl_code() + `
-                varying vec2 f_tex_coord;
-                varying float noisemap_val;
-                attribute vec3 position, normal;                            
-                // Position is expressed in object coordinates.
-                attribute vec2 texture_coord;
-                
-                uniform mat4 model_transform;
-                uniform mat4 projection_camera_model_transform;
-        
-                void main(){
-                    vertex_worldspace = ( model_transform * vec4( position, 1.0 ) ).xyz;
+        varying vec2 f_tex_coord;
+        varying float noisemap_val;
+        attribute vec3 position, normal;
+        // Position is expressed in object coordinates.
+        attribute vec2 texture_coord;
 
-                    #define OFFSET 0.002
-                    #define HEIGHT_SCALE 80.0
-                    noisemap_val = multi_octave_noise_wrapped(texture_coord);
-                    float next_noisemap_1 = multi_octave_noise_wrapped(texture_coord+vec2(0, OFFSET));
-                    float next_noisemap_2 = multi_octave_noise_wrapped(texture_coord+vec2(OFFSET, 0));
+        uniform mat4 model_transform;
+        uniform mat4 projection_camera_model_transform;
 
-                    // Find the normal created from the triangle of the three points
-                    vec3 point_0 = vec3(vertex_worldspace.x, noisemap_val * HEIGHT_SCALE, vertex_worldspace.z);
-                    vec3 point_1 = vec3(vertex_worldspace.x, next_noisemap_1 * HEIGHT_SCALE, vertex_worldspace.z+OFFSET);
-                    vec3 point_2 = vec3(vertex_worldspace.x+OFFSET, next_noisemap_2 * HEIGHT_SCALE, vertex_worldspace.z);
-                    
-                    vec3 normal_0 = normalize(cross(point_1-point_0,point_2-point_0));
+        void main() {
+            #define OFFSET 0.002
+            #define HEIGHT_SCALE 80.0
+            noisemap_val = multi_octave_noise_wrapped(texture_coord);
 
-                    vec3 bumped_normal = normal_0;
-//                    vec3 bumped_normal = dot(normal, vec3(noisemap_val, noisemap_val, noisemap_val)) * normal;
-                    N = normalize( mat3( model_transform ) * bumped_normal / squared_scale);
-                    // Turn the per-vertex texture coordinate into an interpolated variable.
-                    f_tex_coord = texture_coord;
-                    // Interpolate the heightmap data
-                    gl_Position = projection_camera_model_transform * vec4( vertex_worldspace.x, noisemap_val * HEIGHT_SCALE, vertex_worldspace.z, 1.0 );
-                  } `;
+            vertex_worldspace = (model_transform * vec4(position, 1.0)).xyz;
+            // Bottom out the height for the oceans
+            float height = noisemap_val * HEIGHT_SCALE;
+            height = noisemap_val < 0.25 ? 0.25 * HEIGHT_SCALE : height;
+            vertex_worldspace.y = height;
+
+            vec3 next_vert_right = vec3(
+                vertex_worldspace.x,
+                multi_octave_noise_wrapped(texture_coord + vec2(0, OFFSET)),
+                vertex_worldspace.z + OFFSET
+            );
+            vec3 next_vert_forward = vec3(
+                vertex_worldspace.x + OFFSET,
+                multi_octave_noise_wrapped(texture_coord + vec2(OFFSET, 0)),
+                vertex_worldspace.z
+            );
+            vec3 next_vert_left = vec3(
+                vertex_worldspace.x,
+                multi_octave_noise_wrapped(texture_coord + vec2(0, -OFFSET)),
+                vertex_worldspace.z - OFFSET
+            );
+            vec3 next_vert_down = vec3(
+                vertex_worldspace.x - OFFSET,
+                multi_octave_noise_wrapped(texture_coord + vec2(-OFFSET, 0)),
+                vertex_worldspace.z
+            );
+            
+            vec3 normal_tl = normalize(cross(next_vert_right - vertex_worldspace, next_vert_forward - vertex_worldspace));
+            vec3 normal_tr = normalize(cross(next_vert_forward - vertex_worldspace, next_vert_left - vertex_worldspace));
+            vec3 normal_bl = normalize(cross(next_vert_left - vertex_worldspace, next_vert_down - vertex_worldspace));
+            vec3 normal_br = normalize(cross(next_vert_down - vertex_worldspace, next_vert_right - vertex_worldspace));
+            
+            vec3 normal = normalize(normal_tl + normal_tr + normal_bl + normal_br);
+
+            N = normalize(mat3(model_transform) * normal / squared_scale);
+            // Turn the per-vertex texture coordinate into an interpolated variable.
+            f_tex_coord = texture_coord;
+            // Interpolate the heightmap data
+            gl_Position = projection_camera_model_transform * vec4(vertex_worldspace.xyz, 1.0);
+        } `;
   }
 
   fragment_glsl_code() {
@@ -307,24 +331,39 @@ export class MountainShader extends Phong_Shader {
     // Fragments affect the final image or get discarded due to depth.
     // language=Glsl
     return this.shared_glsl_code() + `
-                varying vec2 f_tex_coord;
-                varying float noisemap_val;
+        varying vec2 f_tex_coord;
+        varying float noisemap_val;
 
-                void main(){
-                    float fuzz = (multi_octave_noise_wrapped_b(f_tex_coord * 16.) - 0.5);
+        void main() {
+            float fuzz = (multi_octave_noise_wrapped_b(f_tex_coord * 16.) - 0.5);
 
-                    float noise_val_rough = noisemap_val + fuzz * 0.15;
-                    float noise_val_fine = noisemap_val + fuzz * 0.25;
-                    
-                    vec3 color;
-                    
-                    if (noise_val_rough > 0.55) color = vec3(1., 1., 1.) * ((noise_val_fine * 0.2) + 0.8);
-                    else if (noise_val_rough > 0.3) color = vec3(0., 0.6015625, 0.09019607843) * ((noise_val_fine * 0.4) + 0.6);
-                    else color = vec3(0.058823529411764705, 0.368627451, 0.6117647059) * ((noise_val_fine * 0.2) + 0.6);
-                    
-                    gl_FragColor = vec4( color * ambient , 1 );
-                    gl_FragColor.xyz += (phong_model_lights( normalize( N ), vertex_worldspace ));
-                } `;
+            float noise_val_rough = noisemap_val + fuzz * 0.15;
+            float noise_val_fine = fuzz * 0.25;
+
+            vec3 color;
+//            gl_FragColor = vec4(color, 1);
+//            gl_FragColor.xyz += phong_model_lights(normalize(N), vertex_worldspace, 1., 1.);
+            //
+            if (noise_val_rough > 0.55) {
+                color = vec3(1., 1., 1.) * ((noise_val_fine * 0.2) + 0.8);
+
+                gl_FragColor = vec4(color * ambient, 1);
+                gl_FragColor.xyz += phong_model_lights(normalize(N), vertex_worldspace, 1., 1.);
+            }
+            else if (noise_val_rough > 0.3) {
+                color = vec3(0., 0.6015625, 0.09019607843) * ((noise_val_fine * 0.6) + 0.4);
+                
+                gl_FragColor = vec4(color * ambient, 1);
+                gl_FragColor.xyz += phong_model_lights(normalize(N), vertex_worldspace, 0.5, 0.1);
+            }
+            else {
+                color = vec3(0.058823529411764705, 0.368627451, 0.8117647059) * ((noise_val_fine * 0.6) + 0.4);
+
+                gl_FragColor = vec4(color * ambient * 4., 1);
+                gl_FragColor.xyz += phong_model_lights(normalize(N), vertex_worldspace, 1., 1.) * 0.05;
+            }
+
+        } `;
   }
 
   update_GPU(context, gpu_addresses, gpu_state, model_transform, material) {
